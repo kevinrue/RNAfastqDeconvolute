@@ -1,0 +1,12 @@
+# Patterns of files and folder to ignore
+
+# The pattern has to be alone in a line below
+# or git will not be able to use it
+# Put the comments on a separate line.
+
+# the PyCharm hidden folder for project management
+.idea
+# the Eclipse hidden file for project management
+.project
+# the PyDev (Eclipse) hidden file for project management
+.pydevproject
