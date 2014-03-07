@@ -23,19 +23,22 @@ import getopt
 def main():
     # parse command line options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'ha:b:c:d:', ["help"])
+        opts, args = getopt.getopt(sys.argv[1:], 'hf:r:i:I:t:a:A:p:P:',
+                                   ["help", "forward=", "reverse=", "index=", "trim=", "adapter=",
+                                    "adapter_param=", "illumina_version=", "percent_thresh=",
+                                    "phred="])
     except getopt.error, msg:
         print msg
         print "for help use --help"
         sys.exit(2)
     # process options
     for o, a in opts:
+          # For training purpose: shows all the options identified
+        print(o, a)
         # if the "help" option is given, prints the docstring (above)
         if o in ("-h", "--help"):
             print __doc__
             sys.exit(0)
-        # For training purpose: shows all the options identified
-        print(o, a)
     # process arguments
     # arguments are what is left after all the expected option have been parsed
     for arg in args:
