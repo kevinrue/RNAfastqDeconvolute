@@ -64,6 +64,8 @@ import sys
 # Module getopt  allows to process the arguments from the command line
 # automatically instead of manually parsing the individual elements
 import getopt
+# Module os.path allows to check if paths and files exist.
+import os.path
 
 
 def main():
@@ -75,21 +77,41 @@ def main():
                                     "adapter_param=", "illumina_version=", "percent_thresh=",
                                     "phred="])
     except getopt.error, msg:
+        # the external function used to parse the command line may return an unexpected error handled below
         print msg
         print "for help use --help"
-        sys.exit(2)
-    # process options
+        sys.exit(2)  # External module error
+    # For training purpose:print all the options found
+    print opts
+    # For training purpose:print all the arguments found
+    print args
+    # process options which are present in the command line
     for o, a in opts:
-        # For training purpose: shows all the options identified
+        # For training purpose: shows all the expected options identified
         print(o, a)
-        # if the "help" option is given, prints the docstring (above)
+        # if the "help" option is given, prints the docstring and exit the script
         if o in ("-h", "--help"):
             print __doc__
-            sys.exit(0)
+            sys.exit(0)  # Success
+        # If the forward read file exists, save the file path to a variable, otherwise exit the script
+        elif o in ("-f", "--forward"):
+            if os.path.isfile(a):
+                forward_file = a
+            else:
+                print "Forward read file does not exist: %s" % (a)
+                sys.exit(4)  # Missing file error
+    # check that the mandatory options are present
+    if not ("-f" in opts or "--forward" in opts):
+        print "Missing file for forward read!"
+        print "for help use --help"
+        sys.exit(3)  # Missing option error
     # process arguments
-    # arguments are what is left after all the expected option have been parsed
+    # (arguments are what is left after all the expected option have been parsed)
     for arg in args:
-        print(arg)  # process() must be defined elsewhere
+        # For training purpose: shows all the remaining arguments found in the command line
+        print arg
+        # check that only one of the short or long options can be used
+        # If both are present, return an error!
 
 
 if __name__ == "__main__":
