@@ -36,7 +36,7 @@ DESCRIPTION
         Nick required a STRING "I3S3D0" because he used the Perl module StringApprox which requires exactly this format
         to do pattern matching. All Nick had to do is forward the STRING to the StringApprox module.)
 
-    -I, -illumina_version DECIMAL
+    -I, -illumina_version FLOAT
         Version of the Illumina Genome Analyser pipeline used to generate the fastq files. This will affect the
         conversion of the quality score from ASCII to PHRED using an offset of 33 or 64.
 
@@ -45,7 +45,7 @@ DESCRIPTION
         a larger observed percentage will be filtered out due to "poor overall quality".
 
     -P, --phred INTEGER
-        Threshold used to define sequenced nucleotides as "poor quality" (see -p, percent_thresh).
+        Threshold used to define sequenced nucleotides as "poor quality" (see -p, --percent_thresh).
 
 
 The main function was based on a template posted at https://www.artima.com/weblogs/viewpost.jsp?thread=4829
@@ -61,57 +61,47 @@ __copyright__ = "Copyright 2014, GPLv2"
 # Module sys allows to interact with the operating system
 # for instance, collect flags and arguments from the command line
 import sys
-# Module getopt  allows to process the arguments from the command line
-# automatically instead of manually parsing the individual elements
-import getopt
+# Module argparse allows to process the arguments from the command line automatically instead of manually parsing the
+# individual elements.
+# argparse will return an error if a required argment is missing.
+# argparse will convert the value provided in the command line to the data type specified in the parser definition.
+import argparse
 # Module os.path allows to check if paths and files exist.
 import os.path
 
 
 def main():
-    # parse command line options
-    try:
-        # saves the expected option/argument pairs in opts, and the remaining arguments in args
-        opts, args = getopt.getopt(sys.argv[1:], 'hf:r:i:t:a:A:I:p:P:',
-                                   ["help", "forward=", "reverse=", "index=", "trim=", "adapter=",
-                                    "adapter_param=", "illumina_version=", "percent_thresh=",
-                                    "phred="])
-    except getopt.error, msg:
-        # the external function used to parse the command line may return an unexpected error handled below
-        print msg
-        print "for help use --help"
-        sys.exit(2)  # External module error
-    # For training purpose:print all the options found
-    print opts
+    # define the argument parser
+    parser = argparse.ArgumentParser()
+    # List the mandatory options in a separate section "essential arguments" of the help message
+    essential_options = parser.add_argument_group('essential arguments')
+    # Example of a required argument to save as STRING (default)
+    # metavar affects the usage help message
+    # dest is the name of the variable where the filename will be saved
+    essential_options.add_argument('-f', '--forward', required=True,
+                                   help='GZIP-compressed fastq file containing the forward reads.',
+                                   metavar='pe1.fastq.gz',
+                                   dest='forward_file')
+    # Example of a required argument to save as FLOAT number
+    essential_options.add_argument('-I', '--illumina_version', required=True, type=float,
+                                   help='Version of the Illumina Genome Analyser pipeline used to generate the fastq \
+                                   files. This will affect the conversion of the quality score from ASCII to PHRED \
+                                   score using an offset of 33 or 64.', metavar='x.x')
+    # Lists the optional arguments in the default section named "optional arguments:"
+    # Example of an optional argument which will be set to 20 if not specified
+    parser.add_argument('-P', '--phred', type=int, default=20,
+                        help='Threshold used to define sequenced nucleotides as "poor quality" (see -p, percent_thresh)\
+                        . Default is 20.', metavar='P')
+    # parse command line options according to the rules defined above
+    args = parser.parse_args(sys.argv[1:])
     # For training purpose:print all the arguments found
     print args
-    # process options which are present in the command line
-    for o, a in opts:
-        # For training purpose: shows all the expected options identified
-        print(o, a)
-        # if the "help" option is given, prints the docstring and exit the script
-        if o in ("-h", "--help"):
-            print __doc__
-            sys.exit(0)  # Success
-        # If the forward read file exists, save the file path to a variable, otherwise exit the script
-        elif o in ("-f", "--forward"):
-            if os.path.isfile(a):
-                forward_file = a
-            else:
-                print "Forward read file does not exist: %s" % (a)
-                sys.exit(4)  # Missing file error
-    # check that the mandatory options are present
-    if not ("-f" in opts or "--forward" in opts):
-        print "Missing file for forward read!"
-        print "for help use --help"
-        sys.exit(3)  # Missing option error
-    # process arguments
-    # (arguments are what is left after all the expected option have been parsed)
-    for arg in args:
-        # For training purpose: shows all the remaining arguments found in the command line
-        print arg
-        # check that only one of the short or long options can be used
-        # If both are present, return an error!
+    # For training purpose:print here is how to access the value of the option "forward"
+    print args.forward_file
+    # Check that the forward_file provided does exist
+    if not os.path.isfile(args.forward_file):
+        print "Error: File of forward reads was not found: %s" % args.forward_file
+        sys.exit(2)
 
 
 if __name__ == "__main__":
