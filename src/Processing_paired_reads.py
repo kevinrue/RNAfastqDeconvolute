@@ -90,8 +90,8 @@ def main():
     # Lists the optional arguments in the default section named "optional arguments:"
     # Example of an optional argument which will be set to 20 if not specified
     parser.add_argument('-P', '--phred', type=int, default=20,
-                        help='Threshold used to define sequenced nucleotides as "poor quality" (see -p, percent_thresh)\
-                        . Default is 20.', metavar='P')
+                        help='Threshold used to define sequenced nucleotides as "poor quality"'
+                             '(see -p, percent_thresh). Default is 20.', metavar='P')
     # parse command line options according to the rules defined above
     args = parser.parse_args(sys.argv[1:])
     # For training purpose:print all the arguments found
