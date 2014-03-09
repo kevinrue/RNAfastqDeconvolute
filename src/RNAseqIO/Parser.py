@@ -15,7 +15,7 @@ class FastqgzParser:
 
     def __init__(self, filename):
         """Constructor for FastqqzParser
-        :rtype : A parser of class FastqgzParser
+        :rtype : FastqgzParser
         """
         self.filename = filename
         self.file_handler = gzip.open(self.filename, 'rb')
