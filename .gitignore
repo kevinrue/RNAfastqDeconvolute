@@ -12,3 +12,5 @@
 .pydevproject
 # Ignore the large sample data files
 *.fastq.gz
+# Ignore the compiled python files
+*.pyc
