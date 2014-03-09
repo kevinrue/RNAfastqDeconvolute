@@ -68,7 +68,9 @@ import sys
 import argparse
 # Module os.path allows to check if paths and files exist.
 import os.path
-# Custom module to read compressed fastq files
+# Custom module to read compressed fastq files. Read it as "from folder RNAseqIO, import the script Parser".
+# The RNAseqIO folder needs to be on the $PYTHONPATH or in the folder of the script initially called from the command
+# line.
 from RNAseqIO import Parser
 
 
