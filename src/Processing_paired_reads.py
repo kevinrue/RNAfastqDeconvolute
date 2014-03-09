@@ -32,7 +32,7 @@ DESCRIPTION
         to look for the adapter sequence.
 
     -A, --adapter_param STRING
-        (Format to be defined, depending on how we decide to scan the reads for the adapter sequences. For instance,
+        (Format to be defined, depending on how we decide to scan the reads for the adapter sequences. For instance,hep
         Nick required a STRING "I3S3D0" because he used the Perl module StringApprox which requires exactly this format
         to do pattern matching. All Nick had to do is forward the STRING to the StringApprox module.)
 
@@ -94,9 +94,9 @@ def main():
                              '(see -p, percent_thresh). Default is 20.', metavar='P')
     # parse command line options according to the rules defined above
     args = parser.parse_args(sys.argv[1:])
-    # For training purpose:print all the arguments found
+    # For training purpose:print all the arguments found TODO: remove in final code
     print args
-    # For training purpose:print here is how to access the value of the option "forward"
+    # For training purpose:print here is how to access the value of the option "forward" TODO: remove in final code
     print args.forward_file
     # Check that the forward_file provided does exist
     if not os.path.isfile(args.forward_file):
