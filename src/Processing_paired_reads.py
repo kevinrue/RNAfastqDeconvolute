@@ -108,15 +108,17 @@ def main():
     forward_parser = Parser.FastqgzParser(args.forward_file)
     # Get the next read
     read = forward_parser.nextRead()
-    # Close the file stream
-    forward_parser.close()
     # For training purpose: print the read object TODO: remove in final code
     #print read # identical to the four lines below all together
-    # For training purpose: print how to access the different elements of the read TODO: remove in final code
-    print read.header_line
-    print read.sequence_line
-    print read.separator_line
-    print read.quality_line
+    # While the last read parsed is not empty (= end of file not reached), process the read
+    while read.header_line:
+        print read
+        # TODO replace 10 and 80 below by numbers calculated from the parsed command line
+        read.trim(10, 80)
+        print read
+        read = forward_parser.nextRead()
+    # Close the file stream
+    forward_parser.close()
 
 
 if __name__ == "__main__":
