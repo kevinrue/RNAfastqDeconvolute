@@ -68,16 +68,18 @@ import sys
 import argparse
 # Module os.path allows to check if paths and files exist.
 import os.path
+# Custom module to read compressed fastq files
+from RNAseqIO import Parser
 
 
 def main():
-    # define the argument parser
+    # Define the argument parser
     parser = argparse.ArgumentParser()
     # List the mandatory options in a separate section "essential arguments" of the help message
     essential_options = parser.add_argument_group('essential arguments')
-    # Example of a required argument to save as STRING (default)
+    # Example of a required argument to save as STRING variable (default)
     # metavar affects the usage help message
-    # dest is the name of the variable where the filename will be saved
+    # dest is the name of the local variable where the filename will be saved "arg.<dest>"
     essential_options.add_argument('-f', '--forward', required=True,
                                    help='GZIP-compressed fastq file containing the forward reads.',
                                    metavar='pe1.fastq.gz',
@@ -94,14 +96,27 @@ def main():
                              '(see -p, percent_thresh). Default is 20.', metavar='P')
     # parse command line options according to the rules defined above
     args = parser.parse_args(sys.argv[1:])
-    # For training purpose:print all the arguments found TODO: remove in final code
-    print args
-    # For training purpose:print here is how to access the value of the option "forward" TODO: remove in final code
-    print args.forward_file
+    # For training purpose: print all the arguments found TODO: remove in final code
+    #print args
+    # For training purpose: print here  how to access the value of the option "forward" TODO: remove in final code
+    #print args.forward_file
     # Check that the forward_file provided does exist
     if not os.path.isfile(args.forward_file):
         print "Error: File of forward reads was not found: %s" % args.forward_file
         sys.exit(2)
+    # Opens the forward read file
+    forward_parser = Parser.FastqgzParser(args.forward_file)
+    # Get the next read
+    read = forward_parser.nextRead()
+    # Close the file stream
+    forward_parser.close()
+    # For training purpose: print the read object TODO: remove in final code
+    #print read # identical to the four lines below all together
+    # For training purpose: print how to access the different elements of the read TODO: remove in final code
+    print read.header_line
+    print read.sequence_line
+    print read.separator_line
+    print read.quality_line
 
 
 if __name__ == "__main__":
