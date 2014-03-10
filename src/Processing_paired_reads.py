@@ -115,9 +115,15 @@ def main():
     # While the last read parsed is not empty (= end of file not reached), process the read
     while read.header_line:
         print read
-        # TODO replace 10 and 80 below by numbers calculated from the parsed command line
-        read.trim(10, 80)
+        # TODO replace the numbers in the line below by numbers calculated from the parsed command line
+        read.trim(1, 89)  # trim the first and last bases
         print read
+        # 20 the Phred threshold for testing here, 64 the offset for Illumina 1.5, and -1 because the
+        # define_quality_status function uses percentile to check the quality much faster than a per-base counter
+        read.define_quality_status(20 + 64 - 1, 25)
+        # For training purpose: print quality_status attribute (True if accepted quality) TODO: remove in final code
+        print read.quality_status
+        # Moves on to the next (we don't want to process the same read eternally, do we?)
         read = forward_parser.nextRead()
     # Close the file stream
     forward_parser.close()
