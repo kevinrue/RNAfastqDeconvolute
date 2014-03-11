@@ -66,7 +66,7 @@ class Read:
         # Defines whether the read is acceptable (True) or not (False)
         self.quality_status = scipy.percentile(quality_ascii, percentage) > threshold
         # For training purpose: prints the value of the percentile used for threshold TODO remove in final code
-        print 'percentile ({0}%): {1:.3f}'.format(percentage, scipy.percentile(quality_ascii, percentage))
+        print('percentile ({0}%): {1:.3f}'.format(percentage, scipy.percentile(quality_ascii, percentage)))
 
 
     def define_adapter_presence(self, adapter, edit_threshold):

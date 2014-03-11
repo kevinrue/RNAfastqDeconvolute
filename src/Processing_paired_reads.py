@@ -40,12 +40,12 @@ DESCRIPTION
         Version of the Illumina Genome Analyser pipeline used to generate the fastq files. This will affect the
         conversion of the quality score from ASCII to PHRED using an offset of 33 or 64.
 
-    -p, --percent _thresh FLOAT
+    -p, --percent_max FLOAT
         Maximal percentage of the read length allowed below the specified PHRED threshold (see -P, --phred). Reads with
         a larger observed percentage will be filtered out due to "poor overall quality".
 
     -P, --phred INTEGER
-        Threshold used to define sequenced nucleotides as "poor quality" (see -p, --percent_thresh).
+        Threshold used to define sequenced nucleotides as "poor quality" (see -p, --percent_max).
 
 
 The main function was based on a template posted at https://www.artima.com/weblogs/viewpost.jsp?thread=4829
@@ -92,19 +92,23 @@ def main():
                                    files. This will affect the conversion of the quality score from ASCII to PHRED \
                                    score using an offset of 33 or 64.', metavar='x.x')
     # Lists the optional arguments in the default section named "optional arguments:"
-    # Example of an optional argument which will be set to 20 if not specified
+    # Example of an optional argument which will be set to 25 if not specified, and saved to args.percent_max
+    parser.add_argument('-p', '--percent_max', type=float, default=25,
+                        help="Maximal percentage of trimmed nucleotides allowed below the Phred threshold ()."
+                             "(see -P, --phred). Default is 25.", metavar='p')
+    # Example of an optional argument which will be set to 20 if not specified and saved to args.phred
     parser.add_argument('-P', '--phred', type=int, default=20,
-                        help='Threshold used to define sequenced nucleotides as "poor quality"'
-                             '(see -p, percent_thresh). Default is 20.', metavar='P')
+                        help="Minimal accepted Phred score used to define sequenced nucleotides as \"good quality\""
+                             "(see -p, --percent_max). Default is 20.", metavar='P')
     # parse command line options according to the rules defined above
     args = parser.parse_args(sys.argv[1:])
     # For training purpose: print all the arguments found TODO: remove in final code
-    print args
+    print(args)
     # For training purpose: print here  how to access the value of the option "forward" TODO: remove in final code
     #print args.forward_file
     # Check that the forward_file provided does exist
     if not os.path.isfile(args.forward_file):
-        print "Error: File of forward reads was not found: %s" % args.forward_file
+        print("Error: File of forward reads was not found: %s" % args.forward_file)
         sys.exit(2)
     # Opens the forward read file
     forward_parser = Parser.FastqgzParser(args.forward_file)
@@ -118,34 +122,36 @@ def main():
     elif args.illumina_version >= 1.8:
         ascii_phred_threshold = args.phred + 33 - 1
     else:
-        print "This illumina version: %d is not supported; please check again your illumina version for phred score \
-        encoding or seek advice about this script!\n" % args.illumina_version
+        print("This illumina version: %d is not supported; please check again your illumina version for phred score \
+               encoding or seek advice about this script!\n" % args.illumina_version)
         sys.exit(3)
     # For training purpose: print the value TODO: remove in final code
-    print "ascii_phred_threshold: %i" % ascii_phred_threshold
+    print(
+        "ascii_phred_threshold: %i (Phred: %i + Illumina v%s offset: %i - 1 to avoid doing -1 for each read)" %
+        (ascii_phred_threshold, args.phred, args.illumina_version, ascii_phred_threshold - args.phred + 1))
     # While the last read parsed is not empty (= end of file not reached), process the read
     while read.header_line:
-        print read
+        print(read)
         # TODO replace the numbers in the line below by numbers calculated from the parsed command line
         read.trim(1, 89)  # trim the first and last bases
-        print read
+        print(read)
         # 20 the Phred threshold for testing here, 64 the offset for Illumina 1.5, and -1 for mathematical reasons (the
         # define_quality_status function uses percentile to check the quality much faster than a per-base counter)
-        read.define_quality_status(ascii_phred_threshold, 25)
+        read.define_quality_status(ascii_phred_threshold, args.percent_max)
         # For training purpose: print quality_status attribute (True if accepted quality) TODO: remove in final code
-        print "read.quality_status: %s" % read.quality_status
+        print("read.quality_status: %s" % read.quality_status)
         # Check whether the adapter sequence is present without mismatch
         # TODO replace the values in the line below by values parsed from the adaptor file and command line
         read.define_adapter_presence("AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC", 3)
         # For training purpose: print quality_status attribute (True if adapter present) TODO: remove in final code
-        print "read.adapter_present: %s" % read.adapter_present
+        print("read.adapter_present: %s" % read.adapter_present)
         # adds one to adapter counter in adapter is present
         if read.adapter_present:
             adapter_count += 1
         # Moves on to the next (we don't want to process the same read eternally, do we?)
         read = forward_parser.nextRead()
     # For training purpose: print the count of reads with adapter detected TODO: remove in final code
-    print "adapter_count: %i" % adapter_count
+    print("adapter_count: %i" % adapter_count)
     # Close the file stream
     forward_parser.close()
 

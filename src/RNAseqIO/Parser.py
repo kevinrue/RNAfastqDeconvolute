@@ -18,7 +18,7 @@ class FastqgzParser:
         :rtype : FastqgzParser
         """
         self.filename = filename
-        self.file_handler = gzip.open(self.filename, 'rb')
+        self.file_handler = gzip.open(self.filename, 'rt')
 
     def open(self):
         """Opens the file stream.
@@ -29,7 +29,7 @@ class FastqgzParser:
         Returns:
             None
         """
-        self.file_handler = gzip.open(self.filename, "r")
+        self.file_handler = gzip.open(self.filename, "rt")
 
     def nextRead(self):
         """Parses and return the next sequenced read in the file.
