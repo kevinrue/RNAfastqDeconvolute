@@ -112,19 +112,31 @@ def main():
     read = forward_parser.nextRead()
     # For training purpose: print the read object TODO: remove in final code
     #print read # identical to the four lines below all together
+    # Initialises a counter storing the number of read (pairs) filtered out because of adapter contamination
+    adapter_count = 0
     # While the last read parsed is not empty (= end of file not reached), process the read
     while read.header_line:
         print read
         # TODO replace the numbers in the line below by numbers calculated from the parsed command line
         read.trim(1, 89)  # trim the first and last bases
         print read
-        # 20 the Phred threshold for testing here, 64 the offset for Illumina 1.5, and -1 because the
-        # define_quality_status function uses percentile to check the quality much faster than a per-base counter
+        # 20 the Phred threshold for testing here, 64 the offset for Illumina 1.5, and -1 for mathematical reasons (the
+        # define_quality_status function uses percentile to check the quality much faster than a per-base counter)
         read.define_quality_status(20 + 64 - 1, 25)
         # For training purpose: print quality_status attribute (True if accepted quality) TODO: remove in final code
         print read.quality_status
+        # Check whether the adapter sequence is present without mismatch
+        # TODO replace the values in the line below by values parsed from the adaptor file and command line
+        read.define_adapter_presence("AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC", 3)
+        # For training purpose: print quality_status attribute (True if adapter present) TODO: remove in final code
+        print read.adapter_present
+        # adds one to adapter counter in adapter is present
+        if read.adapter_present:
+            adapter_count += 1
         # Moves on to the next (we don't want to process the same read eternally, do we?)
         read = forward_parser.nextRead()
+    # For training purpose: print the count of reads with adapter detected TODO: remove in final code
+    print adapter_count
     # Close the file stream
     forward_parser.close()
 
