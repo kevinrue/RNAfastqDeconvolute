@@ -99,7 +99,7 @@ def main():
     # parse command line options according to the rules defined above
     args = parser.parse_args(sys.argv[1:])
     # For training purpose: print all the arguments found TODO: remove in final code
-    #print args
+    print args
     # For training purpose: print here  how to access the value of the option "forward" TODO: remove in final code
     #print args.forward_file
     # Check that the forward_file provided does exist
@@ -110,10 +110,19 @@ def main():
     forward_parser = Parser.FastqgzParser(args.forward_file)
     # Get the next read
     read = forward_parser.nextRead()
-    # For training purpose: print the read object TODO: remove in final code
-    #print read # identical to the four lines below all together
     # Initialises a counter storing the number of read (pairs) filtered out because of adapter contamination
     adapter_count = 0
+    # Converts the user-defined Phred threshold to a Ascii-compatible value
+    if 1 <= args.illumina_version < 1.8:
+        ascii_phred_threshold = args.phred + 64 - 1
+    elif args.illumina_version >= 1.8:
+        ascii_phred_threshold = args.phred + 33 - 1
+    else:
+        print "This illumina version: %d is not supported; please check again your illumina version for phred score \
+        encoding or seek advice about this script!\n" % args.illumina_version
+        sys.exit(3)
+    # For training purpose: print the value TODO: remove in final code
+    print "ascii_phred_threshold: %i" % ascii_phred_threshold
     # While the last read parsed is not empty (= end of file not reached), process the read
     while read.header_line:
         print read
@@ -122,21 +131,21 @@ def main():
         print read
         # 20 the Phred threshold for testing here, 64 the offset for Illumina 1.5, and -1 for mathematical reasons (the
         # define_quality_status function uses percentile to check the quality much faster than a per-base counter)
-        read.define_quality_status(20 + 64 - 1, 25)
+        read.define_quality_status(ascii_phred_threshold, 25)
         # For training purpose: print quality_status attribute (True if accepted quality) TODO: remove in final code
-        print read.quality_status
+        print "read.quality_status: %s" % read.quality_status
         # Check whether the adapter sequence is present without mismatch
         # TODO replace the values in the line below by values parsed from the adaptor file and command line
         read.define_adapter_presence("AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC", 3)
         # For training purpose: print quality_status attribute (True if adapter present) TODO: remove in final code
-        print read.adapter_present
+        print "read.adapter_present: %s" % read.adapter_present
         # adds one to adapter counter in adapter is present
         if read.adapter_present:
             adapter_count += 1
         # Moves on to the next (we don't want to process the same read eternally, do we?)
         read = forward_parser.nextRead()
     # For training purpose: print the count of reads with adapter detected TODO: remove in final code
-    print adapter_count
+    print "adapter_count: %i" % adapter_count
     # Close the file stream
     forward_parser.close()
 
