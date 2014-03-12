@@ -105,7 +105,7 @@ def main():
     args = parser.parse_args(sys.argv[1:])
     # The elements in the agrs variable will be printed beside Namespace once the code is run
     # For training purpose: print all the arguments found TODO: remove in final code
-    print(args)
+    print("args: %s" % args)
     # For training purpose: print here  how to access the value of the option "forward" TODO: remove in final code
     # print args.forward_file
     # Check that the forward_file provided does exist
@@ -134,10 +134,10 @@ def main():
         (ascii_phred_threshold, args.phred, args.illumina_version, ascii_phred_threshold - args.phred + 1))
     # While the last read parsed is not empty (= end of file not reached), process the read
     while read.header_line:
-        print(read)
+        print("read: %s" % read)
         # TODO replace the numbers in the line below by numbers calculated from the parsed command line
         read.trim(1, 89)  # trim the first and last bases
-        print(read)
+        print("read after trimming: %s" % read)
         # 20 the Phred threshold for testing here, 64 the offset for Illumina 1.5, and -1 for mathematical reasons (the
         # define_quality_status function uses percentile to check the quality much faster than a per-base counter)
         read.define_quality_status(ascii_phred_threshold, args.percent_max)
