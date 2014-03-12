@@ -76,12 +76,12 @@ from RNAseqIO import Parser
 
 def main():
     # Define the argument parser
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="This package deconvolutes PE Illumina reads")
     # List the mandatory options in a separate section "essential arguments" of the help message
     essential_options = parser.add_argument_group('essential arguments')
     # Example of a required argument to save as STRING variable (default)
     # metavar affects the usage help message
-    # dest is the name of the local variable where the filename will be saved "arg.<dest>"
+    # dest is the name of the local variable where the filename will be saved "args.<dest>"
     essential_options.add_argument('-f', '--forward', required=True,
                                    help='GZIP-compressed fastq file containing the forward reads.',
                                    metavar='pe1.fastq.gz',
