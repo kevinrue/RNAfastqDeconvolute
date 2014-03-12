@@ -102,6 +102,7 @@ def main():
                              "(see -p, --percent_max). Default is 20.", metavar='P')
     # parse command line options according to the rules defined above
     args = parser.parse_args(sys.argv[1:])
+    # The elements in the agrs variable will be printed beside Namespace once the code is run
     # For training purpose: print all the arguments found TODO: remove in final code
     print(args)
     # For training purpose: print here  how to access the value of the option "forward" TODO: remove in final code
