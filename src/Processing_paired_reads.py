@@ -127,7 +127,7 @@ def main():
     # The elements in the agrs variable will be printed beside Namespace once the code is run
     # For training purpose: print all the arguments found TODO: remove in final code
     print("args: %s" % args)
-    # For training purpose: print here how to access the value of the option "forward" TODO: remove in final code
+    # For training purpose: print here  how to access the value of the option "forward" TODO: remove in final code
     # print args.forward_file
 
     # Check that the forward_file provided does exist
@@ -188,8 +188,8 @@ def main():
         # Check whether the adapter sequence is present without mismatch
         # TODO replace the values in the line below by values parsed from the adaptor file and command line
 
-        forward_read.define_adapter_presence("AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC", 3)
-        reverse_read.define_adapter_presence("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTA", 3)
+        forward_read.define_adapter_presence_substitutions_only("AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC", 3)
+        reverse_read.define_adapter_presence_substitutions_only("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTA", 3)
         # For training purpose: print quality_status attribute (True if adapter present) TODO: remove in final code
         print("forward_read.adapter_present: %s" % forward_read.adapter_present)
         print("reverse_read.adapter_present: %s" % reverse_read.adapter_present)
