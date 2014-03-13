@@ -89,4 +89,5 @@ class Read:
         # Uses the nw-line separator of the operating system running this script to separate the different elements of
         # the read on different lines at the screen.
         return os.linesep.join([self.header_line, self.sequence_line, self.separator_line, self.quality_line])
+        # returns the header line, sequence line, separator line and quality line of the read on separate lines
 
