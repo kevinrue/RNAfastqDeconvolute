@@ -115,10 +115,17 @@ def main():
                                    score using an appropriate offset of 33 or 64.', metavar='x.x')
 
     # Lists the optional arguments in the default section named "optional arguments:"
-    # Example of an optional argument which will be set to 25 if not specified, and saved to args.percent_max
+    # Optional argument to provide adapters for filtering
+    parser.add_argument('-a', '--adapters', default=None,
+                        help="TAB-separated file mapping adapter sequences (1st column) to unique identifiers (2nd "
+                             "column), and mate {forward, reverse} to screen for it (3rd column). No file skips the "
+                             "filtering.",
+                        metavar='adapters.txt')
+    # Optional argument to provide barcodes for deconvolution
     parser.add_argument('-b', '--barcodes', default=None,
                         help="TAB-separated file mapping barcodes sequences (1st column) to samples (2nd column)."
                              "No file skips the deconvolution.", metavar='barcodes.txt')
+    # Example of an optional argument which will be set to 25 if not specified, and saved to args.percent_max
     parser.add_argument('-p', '--percent_max', type=float, default=25,
                         help="Maximal percentage of trimmed nucleotides allowed below the Phred threshold"
                              "(see -P, --phred). Default is 25.", metavar='p')
@@ -130,7 +137,7 @@ def main():
     args = parser.parse_args(sys.argv[1:])
     # The elements in the agrs variable will be printed beside Namespace once the code is run
     # For training purpose: print all the arguments found TODO: remove in final code
-    print("args: %s" % args)
+    print("args: %s\n" % args)
     # For training purpose: print here  how to access the value of the option "forward" TODO: remove in final code
     # print args.forward_file
 
@@ -138,21 +145,40 @@ def main():
     if args.barcodes:
         # If the file does not exist, print an error message and exit the script
         if not os.path.isfile(args.barcodes):
-            print("Error: File of forward reads was not found: %s" % args.forward_file)
+            print("Error: File of barcodes was not found: %s" % args.forward_file)
             sys.exit(4)
-        # If we did not exit the script, the file does exist
+        # If we reach this line onward, the file does exist
         # Create a BarcodesParser object
         barcode_parser = Parsers.BarcodesParser(args.barcodes)
         # Make the BarcodesParser import the mapping of expected barcodes and corresponding samples
         # No need to store the output in a variable. The BarcodesParser does not return anything, it stores the
         # information in one of its own variable accessible here as "barcode_parser.expected"
-        barcode_parser.parseBarcodeFile()
+        barcode_parser.parse_barcode_file()
         # For training purposes, print the dictionary mapping TODO: remove in final code
-        print("barcode_parser.expected: %s" % barcode_parser.expected)
+        print("barcode_parser.expected: %s\n" % barcode_parser.expected)
     # if the user did not provide a barcode indexing file
     else:
         #set the barcode parser as None
         barcode_parser = None
+
+    # If the user gave an adapter file
+    if args.adapters:
+        # If the file does not exist, print an error message and exit the script
+        if not os.path.isfile(args.adapters):
+            print("Error: File of adapters was not found: %s" % args.adapters)
+            sys.exit(4)
+        # If we reach this line onward, the file does exist
+        # Create an AdapterParser object
+        adapter_parser = Parsers.AdapterParser(args.adapters)
+        # Make the AdapterParser import the forward and reverse adapters and associated information
+        adapters = adapter_parser.parse_adapters_file()
+        print("adapters: ", adapters, '\n')
+        print("adapters.forward: %s\n" % adapters.forward)
+        print("adapters.reverse: %s\n" % adapters.reverse)
+    # if the user did not provide a barcode indexing file
+    else:
+        #set the adapters as None
+        adapters = None
 
     # Check that the forward_file provided does exist
     if not os.path.isfile(args.forward_file):
@@ -188,35 +214,36 @@ def main():
         sys.exit(4)
     # For training purpose: print the value TODO: remove in final code
     print(
-        "ascii_phred_threshold: %i (Phred: %i + Illumina v%s offset: %i - 1 to avoid doing -1 for each read)" %
-        (ascii_phred_threshold, args.phred, args.illumina_version, ascii_phred_threshold - args.phred + 1))
+        "ascii_phred_threshold: %i (Phred: %i + Illumina v%s offset: %i - 1 to avoid doing -1 for each read in the "
+        "testing step)\n" % (
+        ascii_phred_threshold, args.phred, args.illumina_version, ascii_phred_threshold - args.phred + 1))
 
     # While the last read parsed is not empty (= end of file not reached), process the read
     while forward_read.header_line and reverse_read.header_line:
-        print("forward_read: %s" % forward_read)
-        print("reverse_read: %s" % reverse_read)
+        print("forward_read: %s\n" % forward_read)
+        print("reverse_read: %s\n" % reverse_read)
         # run the while function on both the forward and reverse read simultaneously
         # TODO replace the numbers in the line below by numbers calculated from the parsed command line
         forward_read.trim(1, 89)
         # Trim the first and last bases from the forward read. Trim is a function defined in the SeqDataTypes.py script
         # In pycharm, to see what Trim does hover over the word 'trim' and hit CNTRL
         reverse_read.trim(1, 89)  # trim the reverse read
-        print("forward_read after trimming: %s" % forward_read)
-        print("reverse_read after trimming: %s" % reverse_read)
+        print("forward_read after trimming: %s\n" % forward_read)
+        print("reverse_read after trimming: %s\n" % reverse_read)
 
         # 20 the Phred threshold for testing here, 64 the offset for Illumina 1.5, and -1 for mathematical reasons (the
         # define_quality_status function uses percentile to check the quality much faster than a per-base counter)
         forward_read.define_quality_status(ascii_phred_threshold, args.percent_max)
         # For training purpose: print quality_status attribute (True if accepted quality) TODO: remove in final code
-        print("read.quality_status: %s" % forward_read.quality_status)
+        print("read.quality_status: %s\n" % forward_read.quality_status)
         # Check whether the adapter sequence is present without mismatch
-        # TODO replace the values in the line below by values parsed from the adaptor file and command line
 
-        forward_read.define_adapter_presence_substitutions_only("AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC", 3)
-        reverse_read.define_adapter_presence_substitutions_only("AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTA", 3)
+        # TODO replace the 3 values in the line below by values parsed from the adaptor file and command line
+        forward_read.define_adapter_presence_substitutions_only(adapters.forward.sequence, 3)
+        reverse_read.define_adapter_presence_substitutions_only(adapters.reverse.sequence, 3)
         # For training purpose: print quality_status attribute (True if adapter present) TODO: remove in final code
-        print("forward_read.adapter_present: %s" % forward_read.adapter_present)
-        print("reverse_read.adapter_present: %s" % reverse_read.adapter_present)
+        print("forward_read.adapter_present: %s\n" % forward_read.adapter_present)
+        print("reverse_read.adapter_present: %s\n" % reverse_read.adapter_present)
         # adds one to adapter counter in adapter is present
 
         if forward_read.adapter_present:
@@ -228,8 +255,8 @@ def main():
         forward_read = forward_parser.nextRead()
         reverse_read = reverse_parser.nextRead()
     # For training purpose: print the count of reads with adapter detected TODO: remove in final code
-    print("forward_adapter_count: %i" % forward_adapter_count)
-    print("reverse_adapter_count: %i" % reverse_adapter_count)
+    print("forward_adapter_count: %i\n" % forward_adapter_count)
+    print("reverse_adapter_count: %i\n" % reverse_adapter_count)
     # Close the file stream
     forward_parser.close()
     reverse_parser.close()

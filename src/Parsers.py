@@ -8,6 +8,8 @@ __copyright__ = "Copyright 2014, GPLv2"
 import sys
 # Module gzip allows to parse compressed files without having to first decompress them.
 import gzip
+# Module collections allows a function to return multiple variable in a named tuple. Very clean.
+import collections
 # Custom module to store the data of a read
 import SeqDataTypes
 
@@ -74,7 +76,7 @@ class BarcodesParser:
         self.mismatched = {}
         self.unmatched = []
 
-    def parseBarcodeFile(self):
+    def parse_barcode_file(self):
         """Parses the file provided with the expected barcodes and saves them in the self.expected variable.
 
         The samples_identifiers (sample_ids) and barcodes will first be stored in temporary lists to check for issues
@@ -119,4 +121,97 @@ class BarcodesParser:
             # When all the checks are done, store all the barcode->sample pairs in a dictionary for deconvolution
             for index in range(len(barcodes)):
                 self.expected[barcodes[index]] = sample_ids[index]
-        # Do not return anything, the mapping is stored in the self.expected attribute of the BarcodesParser object
+                # Do not return anything, the mapping is stored in the self.expected attribute of the BarcodesParser
+                # object
+
+
+class AdapterParser:
+    """Parses expected adapter sequence, unique identifier, and read mate to screen for it from a user file."""
+
+    def __init__(self, filename):
+        """Constructor for AdapterParser"""
+        self.filename = filename
+
+    def parse_adapters_file(self):
+        """Parses the TAB-separated file and returns the adapter sequence expected in the forward mate.
+
+        Data is expected in TAB-delimited format, with column 1 being the adapter sequence, column 2 a unique
+        identifier for the adapter and column 3 one of {forward, reverse} specifying which mate to screen for this
+        particular adapter sequence.
+
+        Args:
+            self
+
+        Returns:
+            An Adapter object with the adapter sequence expected in the forward read and a unique identifier.
+        """
+        # Initialises a list variable to temporarily store the identifier of the adapter(s) expected in the forward read
+        # After parsing the file, we will check that the list contains only one element (only one type of adapter
+        # should be used at each end of the RNA fragments in a given library
+        forward_identifiers = []
+        # Same as above for the identifiers of the adaptors expected in the reverse read
+        reverse_identifiers = []
+        # Initialises a variable which will contain the (last) sequence expected in the forward read
+        forward_sequence = None
+        # Initialises a variable which will contain the (last) sequence expected in the reverse read
+        reverse_sequence = None
+        # Open the file
+        with open(self.filename) as file_in:
+            # for each line in the file
+            for line in file_in:
+                # strip and split the line into a list of the different fields
+                fields = line.strip().split('\t')
+                # Here is the definition of the different expected fields (avoids refactoring the whole function if
+                # we change our mind later)
+                current_sequence = fields[0]
+                current_identifier = fields[1]
+                current_mate = fields[2]
+                # If the current adapter is expected in the forward read
+                if current_mate.lower() == "forward":
+                    # add the identifier to the list of identifiers expected in the forward read
+                    forward_identifiers.append(current_identifier)
+                    # Store the sequence of the adapter in the prepared variable
+                    forward_sequence = current_sequence
+                    # We don't need to store the "mate" field: the if statement at the top of this block of code ensures
+                    # that it is an adaptor expected in the forward read.
+                # If the current adapter is expected in the reverse read
+                elif current_mate.lower() == "reverse":
+                    # add the identifier to the list of identifiers expected in the reverse read
+                    reverse_identifiers.append(current_identifier)
+                    # Store the sequence of the adapter in the prepared variable
+                    reverse_sequence = current_sequence
+                    # We don't need to store the "mate" field: the if statement at the top of this block of code ensures
+                    # that it is an adaptor expected in the forward read.
+                # If the current adapter has an unexpected value in the "mate" field
+                else:
+                    # return an error and exit the script
+                    print(
+                        'Unexpected value in the "mate" field. Please check your adaptor file (%s) or seek advice '
+                        'about this script!' % self.filename)
+                    sys.exit(6)
+        # Once we finished parsing the adaptor file, we do some sanity checks and if ok, return the adaptor object
+        # return an error and exit the script if there are more than 1 adaptor expected in the forward read
+        if len(forward_identifiers) > 1:
+            print(
+                'More than one adaptor sequence is expected in the forward read. Please check your adaptor file (%s) '
+                'or seek advice about this script!' % self.filename)
+            sys.exit(7)
+            # Return an error
+        if len(reverse_identifiers) > 1:
+            print(
+                'More than one adaptor sequence is expected in the reverse read. Please check your adaptor file (%s) '
+                'or seek advice about this script!' % self.filename)
+            sys.exit(8)
+        # Return an error if the identifier from forward and reverse read are the same (if we reached this line,
+        # we know there is one unique adapter for each mate).
+        if forward_identifiers == reverse_identifiers:
+            print(
+                'Identifiers from forward and reverse are not unique. Please check your adaptor file (%s) or seek '
+                'advice about this script!' % self.filename)
+            sys.exit(9)
+        # After all the sanity check return the forward and reverse adaptor objects as a tuple
+        # Prepare a named tuple structure to cleanly return the two adapters in one variable
+        adapter_pair = collections.namedtuple('AdapterPair', ['forward', 'reverse'])
+        # Fill in the tuple structure with the adapter objects and return it
+        return adapter_pair(forward=SeqDataTypes.Adapter(forward_identifiers[0], forward_sequence, 'forward'),
+                            reverse=SeqDataTypes.Adapter(reverse_identifiers[0], reverse_sequence, 'reverse'))

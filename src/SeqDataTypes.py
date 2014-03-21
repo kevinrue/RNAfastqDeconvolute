@@ -30,7 +30,7 @@ class Read:
         self.quality_status = True
         # If adapter is present then set to True, otherwise set to False
         # Defaults to False (if no adapter check is done, it is assumed to be absent)
-        self.adapter_present = True
+        self.adapter_present = False
 
     def trim(self, left, right):
         """Crops the read sequence and associated quality_line keeping positions five_start to three_end.
@@ -70,7 +70,7 @@ class Read:
         # Defines whether the read is acceptable (True) or not (False)
         self.quality_status = scipy.percentile(quality_ascii, percentage) > threshold
         # For training purpose: prints the value of the percentile used for threshold TODO remove in final code
-        print('percentile ({0}%): {1:.3f}'.format(percentage, scipy.percentile(quality_ascii, percentage)))
+        print('percentile ({0}%): {1:.3f}\n'.format(percentage, scipy.percentile(quality_ascii, percentage)))
 
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
@@ -98,11 +98,13 @@ class Read:
             result = approx_substitute(adapter, self.sequence_line[index:index + len(adapter)], max_substitutions)
             # If a match was found (result is TRUE)
             if result:
-                # return TRUE (and stop the function here)
-                return result
-        # If no substring of sequence_line returned TRUE, the function will eventually leave the loop above
-        # The simple fact of arriving here proves that no match was found, therefore return FALSE
-        return False
+                # set the adapter presence to True (and stop the function here)
+                self.adapter_present = True
+                return None
+        # If no substring of sequence_line approximately matches the adapter, the function will eventually leave the
+        # loop above.
+        # The simple fact of arriving here proves that no match was found, therefore leave the adapter preence to False
+        # and simply leave the function
 
     def define_adapter_presence_levenshtein(self, adapter, edit_threshold):
         """Set the adapter_absent attribute according to whether a match is found with an edit distance less or equal to
