@@ -120,9 +120,26 @@ class Read:
 
     def __str__(self):
         """This function defines the string representation displayed when calling the print function on a Read object"""
-        # Uses the nw-line separator of the operating system running this script to separate the different elements of
+        # Uses the new-line separator of the operating system running this script to separate the different elements of
         # the read on different lines at the screen.
         return os.linesep.join([self.header_line, self.sequence_line, self.separator_line, self.quality_line])
+        # returns the header line, sequence line, separator line and quality line of the read on separate lines
+
+
+class Adapter:
+    """Adapter sequence and associated data"""
+
+    def __init__(self, identifier, sequence, mate):
+        """Constructor for Adapter"""
+        self.identifier = identifier
+        self.sequence = sequence
+        self.mate = mate
+
+    def __str__(self):
+        """This function defines a string representation displayed when calling the print function on an Adapter
+        object"""
+        # Uses the tab separator to separate the different elements of the Adapter
+        return '\t'.join([self.sequence, self.identifier, self.mate])
         # returns the header line, sequence line, separator line and quality line of the read on separate lines
 
 
