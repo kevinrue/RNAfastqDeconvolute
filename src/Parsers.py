@@ -12,6 +12,8 @@ import gzip
 import collections
 # Custom module to store the data of a read
 import SeqDataTypes
+# Custom Module which contains a few functions for approximate matching
+import ApproxMatch
 
 
 class FastqgzParser:
@@ -123,6 +125,80 @@ class BarcodesParser:
                 self.expected[barcodes[index]] = sample_ids[index]
                 # Do not return anything, the mapping is stored in the self.expected attribute of the BarcodesParser
                 # object
+
+    def assign_read_to_sample(self, read, barcode_length):
+        """Given a read object and the expected length of a barcode, check its barcode against the expected and
+        observed barcodes to define the sample it should be assigned to.
+
+        Args:
+            self, read
+
+        Returns:
+            The name of the sample to assign the read to.
+        """
+        # Extract the sequenced barcode from the header of the read
+        sequenced_barcode = self.extract_barcode_header(read, barcode_length)
+        # For training purpose, print the barcode extracted from the read header
+        print("sequenced_barcode: %s\n" % sequenced_barcode)
+        # if the barcode exactly matches one of the expected barcodes
+        if sequenced_barcode in self.expected.keys():
+            # set the assigned sample to the corresponding sample_id
+            read.sample = self.expected[sequenced_barcode]
+        # if the barcode exactly matches an unexpected barcodes previously resolved to a sample
+        elif sequenced_barcode in self.mismatched.keys():
+            # set the assigned sample to the corresponding sample_id
+            read.sample = self.mismatched[sequenced_barcode]
+        # if the barcode exactly matches an unexpected barcodes previously resolved to ambiguous or unmatched ones
+        elif sequenced_barcode in self.unmatched:
+            # set the assigned sample to False
+            read.sample = False
+        # if the barcode does not match any barcode observed so far
+        else:
+            # resolve if it can uniquely be assigned to one expected barcode
+            # assigned_barcode will be the sample_id, or False if the barcode is ambiguous or unassigned
+            read.sample = self.assign_to_unique_sample(sequenced_barcode)
+            # If a unique sample is resolved
+            if read.sample:
+                # Update the observed barcodes accordingly
+                self.mismatched[sequenced_barcode] = read.sample
+            else:
+                self.unmatched = sequenced_barcode
+
+    def assign_to_unique_sample(self, sequenced_barcode):
+        """Resolves the barcode to a unique sample, or returns False if the barcode is ambiguous.
+
+        Args:
+            self, sequenced_barcode
+
+        Returns:
+            The name of the sample matched to the barcode, or False if the barcode was ambiguous.
+        """
+        # Temporary list to store the expected barcodes which approximately match the sequenced barcode
+        matches = []
+        # For each expected barcode
+        for expected in list(self.expected.keys()):
+            # check if the sequenced barcode is an approximate match to each of them
+            if ApproxMatch.approx_substitute(expected, sequenced_barcode, 1):
+                matches.append(expected)
+        # If the sequenced barcode is an approximate match of a unique expected barcode
+        if len(matches) == 1:
+            # return the corresponding sample name
+            return matches[0]
+        # If the sequenced barcode is an approximate match of more than one expected barcode, or not a match at all
+        else:
+            # return False
+            return False
+
+    def extract_barcode_header(self, read, barcode_length):
+        """Assuming the barcode is in the header of the read between symbols # (on the left) and / (on the right)
+        
+        Args:
+            self, read
+           
+        Returns:
+            The sequenced barcode.
+        """
+        return read.header_line.split('#')[1][:barcode_length]
 
 
 class AdapterParser:

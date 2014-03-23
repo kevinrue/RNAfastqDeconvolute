@@ -171,6 +171,10 @@ def main():
         barcode_parser.parse_barcode_file()
         # For training purposes, print the dictionary mapping TODO: remove in final code
         print("Test: barcode_parser.expected: %s" % barcode_parser.expected)
+        # From the first barcode, define the expected barcode length
+        barcode_length = len(list(barcode_parser.expected.keys())[0])
+        # Informative message
+        print("Info: Expected barcode length: %i (observed from sample in barcode file)" % barcode_length)
     # if the user did not provide a barcode indexing file
     else:
         # Informative message
@@ -304,6 +308,13 @@ def main():
         print("Test: forward_read: %s\n" % forward_read)
         print("Test: reverse_read: %s\n" % reverse_read)
         # run the while function on both the forward and reverse read simultaneously
+
+        # Only perform deconvolution step if barcodes were given
+        if args.barcodes:
+            # Define which sample the raed should be assigned to
+            barcode_parser.assign_read_to_sample(forward_read, barcode_length)
+            print("read.sample: %s\n" % forward_read.sample)
+        #
 
         # Only perform the trimming step if trimming values were given and at least one of them is different from 0
         if args.trim:
