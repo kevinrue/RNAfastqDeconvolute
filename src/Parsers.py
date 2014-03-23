@@ -35,7 +35,7 @@ class FastqgzParser:
         """
         self.file_handler = gzip.open(self.filename, "rt")
 
-    def nextRead(self):
+    def next_read(self):
         """Parses and return the next sequenced read in the file.
 
         Args:

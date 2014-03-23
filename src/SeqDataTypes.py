@@ -230,7 +230,7 @@ def approx_within(small_string, long_string, max_ins, max_sub):
     """
     for str2_idx in range(len(long_string) - len(small_string) + 1):
         print(str2_idx)
-        result = approxStartsWith(small_string, long_string[str2_idx:], max_ins, max_sub)
+        result = approx_starts_with(small_string, long_string[str2_idx:], max_ins, max_sub)
         if result:
             return result
     return False
