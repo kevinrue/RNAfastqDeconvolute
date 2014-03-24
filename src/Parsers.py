@@ -4,12 +4,14 @@ __copyright__ = "Copyright 2014, GPLv2"
 """Empty docstring
 """
 
-# Module sys allows to interrup the script and return an error code
-import sys
-# Module gzip allows to parse compressed files without having to first decompress them.
-import gzip
 # Module collections allows a function to return multiple variable in a named tuple. Very clean.
 import collections
+# Module gzip allows to parse compressed files without having to first decompress them.
+import gzip
+# Module re allows to match regular expressions. Useful to see if a filename comes from BIG, MSU, or Conway.
+import re
+# Module sys allows to interrupt the script and return an error code
+import sys
 # Custom module to store the data of a read
 import SeqDataTypes
 # Custom Module which contains a few functions for approximate matching
@@ -58,10 +60,10 @@ class FastqgzParser:
 
     def close(self):
         """Closes the file stream.
-        
+
         Args:
             self
-           
+
         Returns:
             None
         """
@@ -192,10 +194,10 @@ class BarcodesParser:
 
     def extract_barcode_header(self, read, barcode_length):
         """Assuming the barcode is in the header of the read between symbols # (on the left) and / (on the right)
-        
+
         Args:
             self, read
-           
+
         Returns:
             The sequenced barcode.
         """
@@ -295,3 +297,112 @@ class AdapterParser:
         # Fill in the tuple structure with the adapter objects and return it
         return adapter_pair(forward=SeqDataTypes.Adapter(forward_identifiers[0], forward_sequence, 'forward'),
                             reverse=SeqDataTypes.Adapter(reverse_identifiers[0], reverse_sequence, 'reverse'))
+
+
+class FastqgzWriter:
+    """Writes compressed fastq files."""
+
+    def __init__(self, filename, samples):
+        """Constructor for FastqgzWriter"""
+        # Create a dictionary of file handlers (values) associated to each sample (key)
+        self.outfiles = {}
+        self.initialise_fastgz_outfiles(filename, samples)
+
+    def initialise_fastgz_outfiles(self, filename, samples):
+        """Opens file writing streams for each sample to write out the accepted and excluded forward and reverse
+        reads, plus two more writing streams for the unassigned forward and reverse reads.
+
+        Note that filename is the name of the input forward read file, not the name of any output file. The original
+        filename will be used to name the output files containing the reads unassigned to any sample.
+
+        Args:
+            self, samples
+
+        Returns:
+            None
+        """
+        # Prepares a dictionary of pairs of file streams. One pair of file stream corresponds to the forward and
+        # reverse mate of a sample, or the unassigned reads. Each pair of file streams will be accessible from the
+        # dictionary using the sample_id as the key. The forward file stream will be accessible using "pair.forward".
+        outfiles = {}
+        # To save pairs of file streams we will use the collections module again
+        filestream_pair = collections.namedtuple('FileStreamPair', ['forward', 'reverse'])
+        # For each sample name
+        for sample in samples:
+            # Open a file stream for the accepted forward read toward a file name sample_pe1.fastq.gz
+            self.outfiles[sample] = filestream_pair(forward=gzip.open("%s_pe1.fastq.gz" % sample, 'wt'),
+                                                    reverse=gzip.open("%s_pe2.fastq.gz" % sample, 'wt'))
+        # Create an additional pair of file streams for the unassigned reads
+        # The files will be named based on the raw reads filename
+        excluded_basename = set_excluded_filenames_from_raw_file(filename)
+        # Note that the sample field of unassigned reads was set to False
+        self.outfiles[False] = filestream_pair(forward=gzip.open("%s_1.excluded.gz" % excluded_basename, 'wt'),
+                                               reverse=gzip.open("%s_2.excluded.gz" % excluded_basename, 'wt'))
+
+
+    def write_reads(self, forward_read, reverse_read):
+        """Write the forward and reverse read in the corresponding pair of file stream.
+
+            Note that only the forward_read was deconvoluted. The barcode of the reverse read is assumed to be the same.
+        Args:
+            self, read
+
+        Returns:
+            None
+        """
+        # get the pair of file stream corresponding to the sample the forward read was deconvoluted to
+        pair = self.outfiles[forward_read.sample]
+        # write the forward read in the forward file
+        pair.forward.write("%s\n" % forward_read)
+        # write the reverse read in the reverse file
+        pair.reverse.write("%s\n" % reverse_read)
+
+
+    def close_files(self):
+        """Closes all the writing file streams to save the files.
+
+        Args:
+            self
+
+        Returns:
+            None
+        """
+        for pair in self.outfiles.values():
+            pair.forward.close()
+            pair.reverse.close()
+
+
+def set_excluded_filenames_from_raw_file(filename):
+    """Generates a report filename based on the name of the filename of the raw reads.
+
+    Note that the filename of the raw reads will look different depending on the sequencing centre. For now only the
+    BGI case will be implemented to test the AlvMac files.
+
+    Args:
+        filename
+
+    Returns:
+        None. Sets the self.filename field instead.
+    """
+    # For each know centre, test if the filename matches its typical pattern
+    # Test for BGI (Raw_"anything"_1."anything")
+    # keep the "Raw_anything" until the character before the _1
+    BGI_match = re.match('Raw_.*(?=_1\..*$)', filename)
+    test_match = re.match('single(?=_pe1*)|tenthousands(?=_pe1*)', filename)
+    if BGI_match:
+        unassigned_basename = BGI_match.group(0)
+    # Test for our training files
+    # keep the name from the start until the character before the _pe1
+    elif test_match:
+        unassigned_basename = test_match.group(0)
+    # if no pattern matches
+    else:
+        # return an error and exit
+        print(
+            "Error: Your data seems to have been generated by an unknown sequencing centre; please seek advice about "
+            "this script!")
+        sys.exit(2)
+    # if we reach here, a basename was defined, complete it with the extension and return the forward and reverse
+    # filenames
+    return unassigned_basename
+

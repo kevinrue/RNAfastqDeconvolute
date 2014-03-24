@@ -4,8 +4,6 @@ __copyright__ = "Copyright 2014, GPLv2"
 """Empty docstring
 """
 
-# Module os allows to access OS-specific line separator.
-import os
 # Module scipy allows to calculate quantiles, useful to define the PHRED score below which a given percentage of the
 # bases in a read are found.
 import scipy
@@ -130,7 +128,7 @@ class Read:
         """This function defines the string representation displayed when calling the print function on a Read object"""
         # Uses the new-line separator of the operating system running this script to separate the different elements of
         # the read on different lines at the screen.
-        return os.linesep.join([self.header_line, self.sequence_line, self.separator_line, self.quality_line])
+        return "\n".join([self.header_line, self.sequence_line, self.separator_line, self.quality_line])
         # returns the header line, sequence line, separator line and quality line of the read on separate lines
 
 

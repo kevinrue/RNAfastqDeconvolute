@@ -80,9 +80,9 @@ import argparse
 import collections
 # Module datetime allows to print the current time at the start and the end of the script
 import datetime
-# Module os allows to dynamically use the OS-dependent newline character
+# Module os allows to get the current working directory.
 import os
-# Module os.path allows to check if paths and files exist. It is also useful to print the current working directory.
+# Module os.path allows to check if paths and files exist.
 import os.path
 # Module sys allows to interact with the operating system
 # for instance, collect flags and arguments from the command line
@@ -218,7 +218,7 @@ def main():
         else:
             print(
                 "Error: The Illumina version: %.1f is not supported; please check again your illumina version for "
-                "phred score encoding or seek advice about this script!%s" % (args.illumina_version, os.linesep))
+                "phred score encoding or seek advice about this script!\n" % args.illumina_version)
             sys.exit(4)
             # For training purpose: print the value TODO: remove in final code
             #print(
@@ -297,6 +297,9 @@ def main():
     # Initialises a ReadLogger to store the deconvolution statistics
     read_logger = Loggers.ReadLogger(args.forward_file, barcode_parser)
 
+    # Initialise a FastqgzWriter to write the deconvoluted reads to the corresponding outfile
+    fastqgz_writers = Parsers.FastqgzWriter(args.forward_file, list(barcode_parser.expected.values()))
+
     # Parses the reads and process them
     # While the last read parsed is not empty (= end of file not reached), process the read
     # We will assume that if the header line is not empty, the other fields are not either
@@ -310,7 +313,7 @@ def main():
         # DECONVOLUTION #
         # Only perform deconvolution step if barcodes were given
         if args.barcodes:
-            # Define which sample the raed should be assigned to
+            # Define which sample the read should be assigned to
             barcode_parser.assign_read_to_sample(forward_read, barcode_length)
             #print("Test: read.sample: %s\n" % forward_read.sample)
             # if the barcode was assigned to any sample
@@ -321,6 +324,8 @@ def main():
             else:
                 # log it
                 read_logger.unassigned += 1
+                # write the read (appropriate files will be dynamically selected)
+                fastqgz_writers.write_reads(forward_read, reverse_read)
                 # and no need to further process it, move to the next read
                 forward_read = forward_parser.next_read()
                 reverse_read = reverse_parser.next_read()
@@ -347,6 +352,11 @@ def main():
             if forward_read.adapter_present:
                 # log it
                 read_logger.adapter_excluded[forward_read.sample] += 1
+                # change its assigned sample to False to write the read in the excluded file
+                # Now that the  read was logged, this will not affect the statistics
+                forward_read.sample = False
+                # write the read (now to the excluded file)
+                fastqgz_writers.write_reads(forward_read, reverse_read)
                 # and no need to further process it, move to the next read
                 forward_read = forward_parser.next_read()
                 reverse_read = reverse_parser.next_read()
@@ -358,6 +368,11 @@ def main():
             if reverse_read.adapter_present:
                 # log it
                 read_logger.adapter_excluded[forward_read.sample] += 1
+                # change its assigned sample to False to write the read in the excluded file
+                # Now that the  read was logged, this will not affect the statistics
+                forward_read.sample = False
+                # write the read (now to the excluded file)
+                fastqgz_writers.write_reads(forward_read, reverse_read)
                 # and no need to further process it, move to the next read
                 forward_read = forward_parser.next_read()
                 reverse_read = reverse_parser.next_read()
@@ -379,6 +394,11 @@ def main():
             if not forward_read.quality_status:
                 # log it
                 read_logger.quality_excluded[forward_read.sample] += 1
+                # change its assigned sample to False to write the read in the excluded file
+                # Now that the  read was logged, this will not affect the statistics
+                forward_read.sample = False
+                # write the read (now to the excluded file)
+                fastqgz_writers.write_reads(forward_read, reverse_read)
                 # and no need to further process it, move to the next read
                 forward_read = forward_parser.next_read()
                 reverse_read = reverse_parser.next_read()
@@ -390,6 +410,11 @@ def main():
             if not reverse_read.quality_status:
                 # log it
                 read_logger.quality_excluded[forward_read.sample] += 1
+                # change its assigned sample to False to write the read in the excluded file
+                # Now that the  read was logged, this will not affect the statistics
+                forward_read.sample = False
+                # write the read (now to the excluded file)
+                fastqgz_writers.write_reads(forward_read, reverse_read)
                 # and no need to further process it, move to the next read
                 forward_read = forward_parser.next_read()
                 reverse_read = reverse_parser.next_read()
@@ -400,9 +425,11 @@ def main():
                 #  final code
                 #print("Test: read.quality_status: %s\n" % forward_read.quality_status)
 
-        # if we reach here, the read pair succesfully passed deconvolution and filtering
+        # if we reach here, the read pair successfully passed deconvolution and filtering
         # log it
         read_logger.accepted[forward_read.sample] += 1
+        # write the read (appropriate files will be dynamically selected)
+        fastqgz_writers.write_reads(forward_read, reverse_read)
 
         # Moves on to the next (we don't want to process the same read eternally, do we?)
         forward_read = forward_parser.next_read()
@@ -421,6 +448,8 @@ def main():
 
     # Write the deconvolution statistics in the report file
     read_logger.write_stats()
+    # Close (=save) the output read files
+    fastqgz_writers.close_files()
 
     # Informative message
     print("Info: End time:", datetime.datetime.now().replace(microsecond=0))
