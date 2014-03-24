@@ -178,7 +178,7 @@ def main():
     # From the first barcode, define the expected barcode length
     barcode_length = len(list(barcode_parser.expected.keys())[0])
     # Informative message
-    print("Info: Expected barcode length: %i (observed from sample in barcode file)" % barcode_length)
+    print("Info: Expected barcode length: %i (observed from a sample in barcode file)" % barcode_length)
 
     # If the user gave an adapter file
     if args.adapters:
@@ -295,7 +295,7 @@ def main():
     # leave the args.trim value as None
 
     # Initialises a ReadLogger to store the deconvolution statistics
-    read_logger = Loggers.ReadLogger(args.forward_file, barcode_parser.expected.values())
+    read_logger = Loggers.ReadLogger(args.forward_file, barcode_parser)
 
     # Parses the reads and process them
     # While the last read parsed is not empty (= end of file not reached), process the read
@@ -409,14 +409,18 @@ def main():
         reverse_read = reverse_parser.next_read()
 
     # For training purpose: print the stats recorded in the read.logger TODO: remove in final code
-    print("Test: read_logger.assigned: ", read_logger.assigned)
-    print("Test: read_logger.unassigned: ", read_logger.unassigned)
-    print("Test: read_logger.quality_excluded: ", read_logger.quality_excluded)
-    print("Test: read_logger.adapter_excluded: ", read_logger.adapter_excluded)
+    #print("Test: read_logger.assigned: ", read_logger.assigned)
+    #print("Test: read_logger.unassigned: %i" % read_logger.unassigned)
+    #print("Test: read_logger.quality_excluded:", read_logger.quality_excluded)
+    #print("Test: read_logger.adapter_excluded:", read_logger.adapter_excluded)
+    print('Info: Total reads processed: {0:,}'.format(sum(read_logger.assigned.values()) + read_logger.unassigned))
 
     # Close the file stream of the raw read files
     forward_parser.close()
     reverse_parser.close()
+
+    # Write the deconvolution statistics in the report file
+    read_logger.write_stats()
 
     # Informative message
     print("Info: End time:", datetime.datetime.now().replace(microsecond=0))
