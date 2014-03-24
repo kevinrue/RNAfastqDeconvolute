@@ -32,8 +32,8 @@ class Read:
         # Defaults to False (if no adapter check is done, it is assumed to be absent)
         self.adapter_present = False
         # If the read was assigned to a sample then set to the sample_id, otherwise set to False
-        # Default to None (if no deconvolution is done, all reads will be merged in one file without sample_id)
-        self.sample = None
+        # Default to False (unassigned read)
+        self.sample = False
 
     def trim(self, left, right):
         """Crops the read sequence and associated quality_line keeping positions five_start to three_end.
@@ -73,7 +73,7 @@ class Read:
         # Defines whether the read is acceptable (True) or not (False)
         self.quality_status = scipy.percentile(quality_ascii, percentage) > threshold
         # For training purpose: prints the value of the percentile used for threshold TODO remove in final code
-        print('percentile ({0}%): {1:.3f}\n'.format(percentage, scipy.percentile(quality_ascii, percentage)))
+        #print('Test: percentile ({0}%): {1:.3f}\n'.format(percentage, scipy.percentile(quality_ascii, percentage)))
 
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):

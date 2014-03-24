@@ -111,14 +111,14 @@ class BarcodesParser:
             # Return an error if there are duplicate sample_ids (who puts two barcodes for the same sample?)
             if len(set([x for x in sample_ids if sample_ids.count(x) > 1])):
                 print(
-                    'The same sample identifier appears twice in the barcode file. Please check again or seek advice'
-                    ' about this script!\n')
+                    'Error: The same sample identifier appears twice in the barcode file. Please check again or seek '
+                    'advice about this script!\n')
                 sys.exit(5)
             # Return an error if there are duplicate barcodes (who puts two samples with the same barcode?)
             if len(set([x for x in barcodes if barcodes.count(x) > 1])):
                 print(
-                    'The same sample barcode appears twice in the barcode file. Please check again or seek advice'
-                    ' about this script!\n')
+                    'Error: The same sample barcode appears twice in the barcode file. Please check again or seek '
+                    'advice about this script!\n')
                 sys.exit(6)
             # When all the checks are done, store all the barcode->sample pairs in a dictionary for deconvolution
             for index in range(len(barcodes)):
@@ -139,7 +139,7 @@ class BarcodesParser:
         # Extract the sequenced barcode from the header of the read
         sequenced_barcode = self.extract_barcode_header(read, barcode_length)
         # For training purpose, print the barcode extracted from the read header
-        print("sequenced_barcode: %s\n" % sequenced_barcode)
+        #print("Test: sequenced_barcode: %s\n" % sequenced_barcode)
         # if the barcode exactly matches one of the expected barcodes
         if sequenced_barcode in self.expected.keys():
             # set the assigned sample to the corresponding sample_id
@@ -150,8 +150,9 @@ class BarcodesParser:
             read.sample = self.mismatched[sequenced_barcode]
         # if the barcode exactly matches an unexpected barcodes previously resolved to ambiguous or unmatched ones
         elif sequenced_barcode in self.unmatched:
-            # set the assigned sample to False
-            read.sample = False
+            # leave the assigned sample to False (unassigned)
+            # pass is the Python command that does nothing
+            pass
         # if the barcode does not match any barcode observed so far
         else:
             # resolve if it can uniquely be assigned to one expected barcode
@@ -162,7 +163,7 @@ class BarcodesParser:
                 # Update the observed barcodes accordingly
                 self.mismatched[sequenced_barcode] = read.sample
             else:
-                self.unmatched = sequenced_barcode
+                self.unmatched.append(sequenced_barcode)
 
     def assign_to_unique_sample(self, sequenced_barcode):
         """Resolves the barcode to a unique sample, or returns False if the barcode is ambiguous.
@@ -183,7 +184,7 @@ class BarcodesParser:
         # If the sequenced barcode is an approximate match of a unique expected barcode
         if len(matches) == 1:
             # return the corresponding sample name
-            return matches[0]
+            return self.expected[matches[0]]
         # If the sequenced barcode is an approximate match of more than one expected barcode, or not a match at all
         else:
             # return False
@@ -262,27 +263,30 @@ class AdapterParser:
                 else:
                     # return an error and exit the script
                     print(
-                        'Unexpected value in the "mate" field. Please check your adaptor file (%s) or seek advice '
-                        'about this script!' % self.filename)
+                        'Error: Unexpected value in the "mate" field. Please check your adaptor file (%s) or seek '
+                        'advice about this script!' % self.filename)
                     sys.exit(6)
         # Once we finished parsing the adaptor file, we do some sanity checks and if ok, return the adaptor object
         # return an error and exit the script if there are more than 1 adaptor expected in the forward read
         if len(forward_identifiers) > 1:
             print(
-                'More than one adaptor sequence is expected in the forward read. Please check your adaptor file (%s) '
+                'Error: More than one adaptor sequence is expected in the forward read. Please check your adaptor '
+                'file (%s) '
                 'or seek advice about this script!' % self.filename)
             sys.exit(7)
             # Return an error
         if len(reverse_identifiers) > 1:
             print(
-                'More than one adaptor sequence is expected in the reverse read. Please check your adaptor file (%s) '
+                'Error: More than one adaptor sequence is expected in the reverse read. Please check your adaptor '
+                'file (%s) '
                 'or seek advice about this script!' % self.filename)
             sys.exit(8)
         # Return an error if the identifier from forward and reverse read are the same (if we reached this line,
         # we know there is one unique adapter for each mate).
         if forward_identifiers == reverse_identifiers:
             print(
-                'Identifiers from forward and reverse are not unique. Please check your adaptor file (%s) or seek '
+                'Error: Identifiers from forward and reverse are not unique. Please check your adaptor file (%s) or '
+                'seek '
                 'advice about this script!' % self.filename)
             sys.exit(9)
         # After all the sanity check return the forward and reverse adaptor objects as a tuple
