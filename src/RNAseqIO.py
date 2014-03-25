@@ -18,6 +18,39 @@ import SeqDataTypes
 import ApproxMatch
 
 
+class FastqgzPairParser:
+    """Synchronises the parsing of a forward and a reverse compressed fastq files."""
+
+    def __init__(self, forward_file, reverse_file):
+        """Constructor for ReadPairParser"""
+        self.forward_parser = FastqgzParser(forward_file)
+        self.reverse_parser = FastqgzParser(reverse_file)
+
+    def next_read_pair(self):
+        """Reads the next mate pair.
+
+        Args:
+            self
+
+        Returns:
+            An object of class ReadPair containing the two reads as objects themselves.
+        """
+        # Fill in the tuple structure with the adapter objects and return it
+        return SeqDataTypes.ReadPair(self.forward_parser.next_read(), self.reverse_parser.next_read())
+
+    def close(self):
+        """Closes the two file streams.
+
+        Args:
+            self
+
+        Returns:
+            None
+        """
+        self.forward_parser.close()
+        self.reverse_parser.close()
+
+
 class FastqgzParser:
     """Parses compressed fastq files."""
 
@@ -134,7 +167,7 @@ class BarcodesParser:
                 # Do not return anything, the mapping is stored in the self.expected attribute of the BarcodesParser
                 # object
 
-    def assign_read_to_sample(self, read, barcode_length):
+    def assign_read_to_sample(self, read_pair, barcode_length):
         """Given a read object and the expected length of a barcode, check its barcode against the expected and
         observed barcodes to define the sample it should be assigned to.
 
@@ -145,17 +178,17 @@ class BarcodesParser:
             The name of the sample to assign the read to.
         """
         # Extract the sequenced barcode from the header of the read
-        sequenced_barcode = self.extract_barcode_header(read, barcode_length)
+        sequenced_barcode = self.extract_barcode_header(read_pair.forward_read, barcode_length)
         # For training purpose, print the barcode extracted from the read header
         #print("Test: sequenced_barcode: %s\n" % sequenced_barcode)
         # if the barcode exactly matches one of the expected barcodes
         if sequenced_barcode in self.expected.keys():
             # set the assigned sample to the corresponding sample_id
-            read.sample = self.expected[sequenced_barcode]
+            read_pair.sample = self.expected[sequenced_barcode]
         # if the barcode exactly matches an unexpected barcodes previously resolved to a sample
         elif sequenced_barcode in self.mismatched.keys():
             # set the assigned sample to the corresponding sample_id
-            read.sample = self.mismatched[sequenced_barcode]
+            read_pair.sample = self.mismatched[sequenced_barcode]
         # if the barcode exactly matches an unexpected barcodes previously resolved to ambiguous or unmatched ones
         elif sequenced_barcode in self.unmatched:
             # leave the assigned sample to False (unassigned)
@@ -165,11 +198,11 @@ class BarcodesParser:
         else:
             # resolve if it can uniquely be assigned to one expected barcode
             # assigned_barcode will be the sample_id, or False if the barcode is ambiguous or unassigned
-            read.sample = self.assign_to_unique_sample(sequenced_barcode)
+            read_pair.sample = self.assign_to_unique_sample(sequenced_barcode)
             # If a unique sample is resolved
-            if read.sample:
+            if read_pair.sample:
                 # Update the observed barcodes accordingly
-                self.mismatched[sequenced_barcode] = read.sample
+                self.mismatched[sequenced_barcode] = read_pair.sample
             else:
                 self.unmatched.append(sequenced_barcode)
 
@@ -354,8 +387,8 @@ class FastqgzWriter:
                                                reverse=gzip.open("%s_2.excluded.gz" % excluded_basename, 'wt'))
 
 
-    def write_reads(self, forward_read, reverse_read):
-        """Write the forward and reverse read in the corresponding pair of file stream.
+    def write_reads(self, read_pair):
+        """Write the forward and reverse read in the corresponding filestream_pair of file stream.
 
             Note that only the forward_read was deconvoluted. The barcode of the reverse read is assumed to be the same.
         Args:
@@ -364,12 +397,12 @@ class FastqgzWriter:
         Returns:
             None
         """
-        # get the pair of file stream corresponding to the sample the forward read was deconvoluted to
-        pair = self.outfiles[forward_read.sample]
+        # get the filestream_pair of file stream corresponding to the sample the forward read was deconvoluted to
+        filestream_pair = self.outfiles[read_pair.sample]
         # write the forward read in the forward file
-        pair.forward.write("%s\n" % forward_read)
+        filestream_pair.forward.write("%s\n" % read_pair.forward_read)
         # write the reverse read in the reverse file
-        pair.reverse.write("%s\n" % reverse_read)
+        filestream_pair.reverse.write("%s\n" % read_pair.reverse_read)
 
 
     def close_files(self):

@@ -26,27 +26,23 @@ class Read:
         # If adapter is present then set to True, otherwise set to False
         # Defaults to False (if no adapter check is done, it is assumed to be absent)
         self.adapter_present = False
-        # If the read was assigned to a sample then set to the sample_id, otherwise set to False
-        # Default to False (unassigned read)
-        self.sample = False
 
-    def trim(self, left, right):
-        """Crops the read sequence and associated quality_line keeping positions five_start to three_end.
+    def trim(self, start, stop):
+        """Crops the read sequence and associated quality_line keeping positions start to stop.
         Be careful to give the positions in Python position numbering (starts at 0). The pain of calculating the proper
         coordinates before calling the function will save a lot of time avoiding re-calculating them every time the
         function is called.
 
-        :rtype : None
         Args:
-            self, left, right
+            self, start, stop
 
         Returns:
             None
         """
         # Trims the sequence line to the desired window
-        self.sequence_line = self.sequence_line[left:right]
+        self.sequence_line = self.sequence_line[start:stop]
         # Trims the quality line to the same window
-        self.quality_line = self.quality_line[left:right]
+        self.quality_line = self.quality_line[start:stop]
 
     def define_quality_status(self, threshold, percentage):
         """Sets the quality_status attribute according to whether stricly more than percentage of bases in the read are
@@ -69,7 +65,6 @@ class Read:
         self.quality_status = scipy.percentile(quality_ascii, percentage) > threshold
         # For training purpose: prints the value of the percentile used for threshold TODO remove in final code
         #print('Test: percentile ({0}%): {1:.3f}\n'.format(percentage, scipy.percentile(quality_ascii, percentage)))
-
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
@@ -113,6 +108,118 @@ class Read:
         # the read on different lines at the screen.
         return "\n".join([self.header_line, self.sequence_line, self.separator_line, self.quality_line])
         # returns the header line, sequence line, separator line and quality line of the read on separate lines
+
+
+class ReadPair:
+    """Sequenced read mates and associated data."""
+
+    def __init__(self, forward_read, reverse_read):
+        """Constructor for ReadPair"""
+        self.forward_read = forward_read
+        self.reverse_read = reverse_read
+        # If the read was assigned to a sample then set to the sample_id, otherwise set to False
+        # Default to False (unassigned read)
+        self.sample = False
+
+    def trim(self, start, stop):
+        """Crops the read sequence and associated quality_line keeping positions start to stop.
+        Be careful to give the positions in Python position numbering (starts at 0). The pain of calculating the proper
+        coordinates before calling the function will save a lot of time avoiding re-calculating them every time the
+        function is called.
+
+        Args:
+            self, start, stop
+
+        Returns:
+            None
+        """
+        self.forward_read.trim(start, stop)
+        self.reverse_read.trim(start, stop)
+
+    def define_quality_status_forward(self, threshold , percentage):
+        """Sets the quality_status attribute of the forward read according to whether stricly more than percentage of
+        bases in the read are strictly below phred.
+         Be careful to give a threshold that is the desired minimal Phred score -1. The reason can be demonstrated with
+         the extreme example where the read has the minimal number of bases at the minimal score or higher. The pain of
+         calculating the proper coordinates before calling the function will save a lot of time avoiding re-calculating
+         them every time the function is called.
+
+        :rtype : None
+        Args:
+            self, phred, percentage
+
+        Returns:
+            None
+        """
+        self.forward_read.define_quality_status_forward(threshold, percentage)
+
+    def define_quality_status_reverse(self, threshold , percentage):
+        """Sets the quality_status attribute of the forward read according to whether stricly more than percentage of
+        bases in the read are strictly below phred.
+         Be careful to give a threshold that is the desired minimal Phred score -1. The reason can be demonstrated with
+         the extreme example where the read has the minimal number of bases at the minimal score or higher. The pain of
+         calculating the proper coordinates before calling the function will save a lot of time avoiding re-calculating
+         them every time the function is called.
+
+        :rtype : None
+        Args:
+            self, phred, percentage
+
+        Returns:
+            None
+        """
+        self.reverse_read.define_quality_status_forward(threshold, percentage)
+
+    def define_adapter_presence_substitutions_only_forward(self, adapter, max_substitutions):
+        """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
+        less or equal to
+        edit_threshold.
+
+        :rtype : None
+        Args:
+            self, adapter, edit_threshold
+
+        Returns:
+            None
+
+        Args:
+            self, adapter, max_substitutions
+
+        Returns:
+            None
+        """
+        self.forward_read.define_adapter_presence_substitutions_only(adapter, max_substitutions)
+
+    def define_adapter_presence_substitutions_only_reverse(self, adapter, max_substitutions):
+        """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
+        less or equal to
+        edit_threshold.
+
+        :rtype : None
+        Args:
+            self, adapter, edit_threshold
+
+        Returns:
+            None
+
+        Args:
+            self, adapter, max_substitutions
+
+        Returns:
+            None
+        """
+        self.reverse_read.define_adapter_presence_substitutions_only(adapter, max_substitutions)
+
+    def __str__(self):
+        """String representation of the read pair.
+
+        Args:
+
+
+        Returns:
+            None
+        """
+        return "%s\n%s"% (self.forward_read, self.reverse_read)
 
 
 class Adapter:
