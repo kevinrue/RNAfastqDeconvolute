@@ -4,6 +4,8 @@ __copyright__ = "Copyright 2014, GPLv2"
 """Empty docstring
 """
 
+# Module arrays allows to handle constrained and efficient array structure
+from array import array
 
 def approx_substitute(str1, str2, max_substitutions):
     """Checks that str1 is less than max_substitutions away from str2.
