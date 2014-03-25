@@ -71,7 +71,13 @@ class FastqgzParser:
 
 
 class BarcodesParser:
-    """Parses expected barcodes in a file and observed barcodes in the reads."""
+    """Parses expected barcodes in a file and observed barcodes in the reads.
+
+    # This type of object was given variables and functions to import expected barcodes from a user file. It also
+    creates and updates a list of barcodes observed in the processed reads, each of which is resolved once and
+    for all to either a unique sample or declared ambiguous and leads to the immediate exclusion of all reads
+    showing that same barcode
+    ."""
 
     def __init__(self, filename):
         """Constructor for BarcodesParser"""
@@ -205,11 +211,16 @@ class BarcodesParser:
 
 
 class AdapterParser:
-    """Parses expected adapter sequence, unique identifier, and read mate to screen for it from a user file."""
+    """Parses expected adapter sequence, unique identifier, and read mate to screen for it from a user file.
+
+    This type of objects was given variables and functions to import adapters expected to be present in the reads."""
 
     def __init__(self, filename):
         """Constructor for AdapterParser"""
+        # The name of the file to read the adapters from
         self.filename = filename
+        # a named tuple to store the forward and reverse adapter
+        self.adapters = None
 
     def parse_adapters_file(self):
         """Parses the TAB-separated file and returns the adapter sequence expected in the forward mate.
@@ -295,12 +306,15 @@ class AdapterParser:
         # Prepare a named tuple structure to cleanly return the two adapters in one variable
         adapter_pair = collections.namedtuple('AdapterPair', ['forward', 'reverse'])
         # Fill in the tuple structure with the adapter objects and return it
-        return adapter_pair(forward=SeqDataTypes.Adapter(forward_identifiers[0], forward_sequence, 'forward'),
-                            reverse=SeqDataTypes.Adapter(reverse_identifiers[0], reverse_sequence, 'reverse'))
+        self.adapters = adapter_pair(forward=SeqDataTypes.Adapter(forward_identifiers[0], forward_sequence, 'forward'),
+                                     reverse=SeqDataTypes.Adapter(reverse_identifiers[0], reverse_sequence, 'reverse'))
 
 
 class FastqgzWriter:
-    """Writes compressed fastq files."""
+    """Writes compressed fastq files.
+
+    This type of object was given variables and functions to handle multiple file writing streams open simultaneously
+    and write the processed reads to the corresponding output compressed fastq file."""
 
     def __init__(self, filename, samples):
         """Constructor for FastqgzWriter"""

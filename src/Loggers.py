@@ -10,7 +10,10 @@ import re
 
 class ReadLogger:
     """Tracks number of reads assigned to each sample, reads filtered out because of quality or adapter
-    contamination, etc."""
+    contamination, etc.
+
+    This type of object was given variables and functions to count the number of reads with an ambiguous barcode,
+    adapter contamination, poor quality, or successfully passing all quality control steps."""
 
     def __init__(self, filename, barcodes_parser):
         """Constructor for ReadLogger

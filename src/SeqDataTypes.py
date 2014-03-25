@@ -7,9 +7,6 @@ __copyright__ = "Copyright 2014, GPLv2"
 # Module scipy allows to calculate quantiles, useful to define the PHRED score below which a given percentage of the
 # bases in a read are found.
 import scipy
-# Module fuzzysearch allows to find approximate matches, useful to detect adaptor sequences in reads with possible
-# sequencing errors.
-import fuzzysearch
 # Custom Module which contains a few functions for approximate matching
 import ApproxMatch
 
@@ -109,20 +106,6 @@ class Read:
                 # The simple fact of arriving here proves that no match was found, therefore leave the adapter
                 # preence to False
                 # and simply leave the function
-
-    def define_adapter_presence_levenshtein(self, adapter, edit_threshold):
-        """Set the adapter_absent attribute according to whether a match is found with an edit distance less or equal to
-        edit_threshold.
-
-        :rtype : None
-        Args:
-            self, adapter, edit_threshold
-
-        Returns:
-            None
-        """
-        self.adapter_present = len(
-            fuzzysearch.find_near_matches_with_ngrams(adapter, self.sequence_line, edit_threshold)) > 0
 
     def __str__(self):
         """This function defines the string representation displayed when calling the print function on a Read object"""
