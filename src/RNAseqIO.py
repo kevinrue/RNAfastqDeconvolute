@@ -353,9 +353,9 @@ class FastqgzWriter:
         """Constructor for FastqgzWriter"""
         # Create a dictionary of file handlers (values) associated to each sample (key)
         self.outfiles = {}
-        self.initialise_fastgz_outfiles(filename, samples)
+        self.initialise_fastqgz_outfiles(filename, samples)
 
-    def initialise_fastgz_outfiles(self, filename, samples):
+    def initialise_fastqgz_outfiles(self, filename, samples):
         """Opens file writing streams for each sample to write out the accepted and excluded forward and reverse
         reads, plus two more writing streams for the unassigned forward and reverse reads.
 
@@ -385,6 +385,82 @@ class FastqgzWriter:
         # Note that the sample field of unassigned reads was set to False
         self.outfiles[False] = filestream_pair(forward=gzip.open("%s_1.excluded.gz" % excluded_basename, 'wt'),
                                                reverse=gzip.open("%s_2.excluded.gz" % excluded_basename, 'wt'))
+
+
+    def write_reads(self, read_pair):
+        """Write the forward and reverse read in the corresponding filestream_pair of file stream.
+
+            Note that only the forward_read was deconvoluted. The barcode of the reverse read is assumed to be the same.
+        Args:
+            self, read
+
+        Returns:
+            None
+        """
+        # get the filestream_pair of file stream corresponding to the sample the forward read was deconvoluted to
+        filestream_pair = self.outfiles[read_pair.sample]
+        # write the forward read in the forward file
+        filestream_pair.forward.write("%s\n" % read_pair.forward_read)
+        # write the reverse read in the reverse file
+        filestream_pair.reverse.write("%s\n" % read_pair.reverse_read)
+
+
+    def close_files(self):
+        """Closes all the writing file streams to save the files.
+
+        Args:
+            self
+
+        Returns:
+            None
+        """
+        for pair in self.outfiles.values():
+            pair.forward.close()
+            pair.reverse.close()
+
+
+class FastqWriter:
+    """Writes fastq files.
+
+    This type of object was given variables and functions to handle multiple file writing streams open simultaneously
+    and write the processed reads to the corresponding output fastq file."""
+
+    def __init__(self, filename, samples):
+        """Constructor for FastqWriter"""
+        # Create a dictionary of file handlers (values) associated to each sample (key)
+        self.outfiles = {}
+        self.initialise_fastq_outfiles(filename, samples)
+
+    def initialise_fastq_outfiles(self, filename, samples):
+        """Opens file writing streams for each sample to write out the accepted and excluded forward and reverse
+        reads, plus two more writing streams for the unassigned forward and reverse reads.
+
+        Note that filename is the name of the input forward read file, not the name of any output file. The original
+        filename will be used to name the output files containing the reads unassigned to any sample.
+
+        Args:
+            self, samples
+
+        Returns:
+            None
+        """
+        # Prepares a dictionary of pairs of file streams. One pair of file stream corresponds to the forward and
+        # reverse mate of a sample, or the unassigned reads. Each pair of file streams will be accessible from the
+        # dictionary using the sample_id as the key. The forward file stream will be accessible using "pair.forward".
+        outfiles = {}
+        # To save pairs of file streams we will use the collections module again
+        filestream_pair = collections.namedtuple('FileStreamPair', ['forward', 'reverse'])
+        # For each sample name
+        for sample in samples:
+            # Open a file stream for the accepted forward read toward a file name sample_pe1.fastq.gz
+            self.outfiles[sample] = filestream_pair(forward=open("%s_pe1.fastq" % sample, 'w'),
+                                                    reverse=open("%s_pe2.fastq" % sample, 'w'))
+        # Create an additional pair of file streams for the unassigned reads
+        # The files will be named based on the raw reads filename
+        excluded_basename = set_excluded_filenames_from_raw_file(filename)
+        # Note that the sample field of unassigned reads was set to False
+        self.outfiles[False] = filestream_pair(forward=open("%s_1.excluded" % excluded_basename, 'w'),
+                                               reverse=open("%s_2.excluded" % excluded_basename, 'w'))
 
 
     def write_reads(self, read_pair):

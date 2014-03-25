@@ -10,7 +10,7 @@
 .project
 # the PyDev (Eclipse) hidden file for project management
 .pydevproject
-# Ignore the large sample data files
+# Ignore the compressed sample data files, which do not work with version control
 *.gz
 # Ignore the compiled python files
 *.pyc
@@ -18,3 +18,7 @@
 *report.txt
 # Ignore the Excel spreadsheets saved from the sample data
 *.xlsx
+# Ignore the output fastq.files
+*fastq
+# Ignore the output excluded read files
+*.excluded

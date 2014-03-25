@@ -301,7 +301,7 @@ def main():
 
     # Initialise a FastqgzWriter to write the deconvoluted reads to the corresponding outfile
     # More details in file RNAseqIO.py, class FastqgzWriter
-    fastqgz_writers = RNAseqIO.FastqgzWriter(args.forward_file, list(barcode_parser.expected.values()))
+    fastq_writers = RNAseqIO.FastqWriter(args.forward_file, list(barcode_parser.expected.values()))
 
     # Parses the reads and process them
     # While the last read parsed is not empty (= end of file not reached), process the read
@@ -329,7 +329,7 @@ def main():
                 read_logger.unassigned += 1
                 # write the read (appropriate files will be dynamically selected: read.sample == False leads to
                 # file of excluded reads)
-                fastqgz_writers.write_reads(read_pair)
+                fastq_writers.write_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -354,11 +354,11 @@ def main():
             if read_pair.forward_read.adapter_present:
                 # log it
                 read_logger.adapter_excluded[read_pair.sample] += 1
-                # change its assigned sample to False to write the read in the excluded file using fastqgz_writers
+                # change its assigned sample to False to write the read in the excluded file using fastq_writers
                 # Now that the read was logged, this will not affect the statistics
                 read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastqgz_writers.write_reads(read_pair)
+                fastq_writers.write_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -373,7 +373,7 @@ def main():
                 # Now that the  read was logged, this will not affect the statistics
                 read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastqgz_writers.write_reads(read_pair)
+                fastq_writers.write_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -398,7 +398,7 @@ def main():
                 # Now that the  read was logged, this will not affect the statistics
                 read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastqgz_writers.write_reads(read_pair)
+                fastq_writers.write_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -413,7 +413,7 @@ def main():
                 # Now that the  read was logged, this will not affect the statistics
                 read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastqgz_writers.write_reads(read_pair)
+                fastq_writers.write_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -427,7 +427,7 @@ def main():
         # log it
         read_logger.accepted[read_pair.sample] += 1
         # write the read (appropriate files will be dynamically selected)
-        fastqgz_writers.write_reads(read_pair)
+        fastq_writers.write_reads(read_pair)
 
         # Moves on to the next (we don't want to process the same read eternally, do we?)
         read_pair = read_pair_parser.next_read_pair()
@@ -445,7 +445,7 @@ def main():
     # Write the deconvolution statistics in the report file
     read_logger.write_stats()
     # Close (=save) the output read files
-    fastqgz_writers.close_files()
+    fastq_writers.close_files()
 
     # Informative message
     print("Info: End time:", datetime.datetime.now().replace(microsecond=0))
