@@ -4,9 +4,7 @@ __copyright__ = "Copyright 2014, GPLv2"
 """Empty docstring
 """
 
-# Module scipy allows to calculate quantiles, useful to define the PHRED score below which a given percentage of the
-# bases in a read are found.
-import scipy
+
 # Custom Module which contains a few functions for approximate matching
 import ApproxMatch
 
@@ -76,10 +74,7 @@ class Read:
             if poor_quality > max_hases:
                 # set the quality status to False to mark the read for exclusion
                 self.quality_status = False
-                # otherwise, leave the quality status field to True to continue processing the read
-                # For training purpose: prints the value of the percentile used for threshold TODO remove in final code
-                #print('Test: percentile ({0}%): {1:.3f}\n'.format(percentage, scipy.percentile(quality_ascii,
-                # percentage)))
+            # otherwise, leave the quality status field to True to continue processing the read
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
