@@ -108,25 +108,12 @@ class Read:
         # the mismatch distance will then be called on these pre-filtered reads to confirm whether it is an actual
         # substituted match or if the Levensthein match involved insertions and deletions
         # If 1 or more approximate matches of the adapter were found within a Levenshtein distance of max_substitutions
-        if len(fuzzysearch.find_near_matches(adapter, self.sequence_line, max_substitutions)):
-            # scan the read sequence for a potential substituted match
-            # for each subsequence of the sequence_line of length identical to the adapter (last starting position is
-            # length of the adapter before the end of the read)
-            for index in range(len(self.sequence_line) - len(adapter) + 1):
-                # check if the adapter is less than max_substitutions away from the subsequence
-                result = ApproxMatch.approx_substitute(adapter, self.sequence_line[index:index + len(adapter)],
-                                                       max_substitutions)
-                # If a match was found (result is TRUE)
-                if result:
-                    # set the adapter presence to True (and stop the function here)
-                    self.adapter_present = True
-                    return
-                    # If no substring of sequence_line approximately matches the adapter, the function will eventually
-                    # leave the
-                    # loop above.
-                    # The simple fact of arriving here proves that no match was found, therefore leave the adapter
-                    # preence to False
-                    # and simply leave the function
+        if len(fuzzysearch.find_near_matches(adapter, self.sequence_line, max_substitutions=max_substitutions,
+                                             max_insertions=0, max_deletions=0, max_l_dist=None)):
+            self.adapter_present = True
+            return
+        # The simple fact of arriving here proves that no match was found, therefore leave the adapter
+        # presence to False and simply leave the function
 
     def __str__(self):
         """This function defines the string representation displayed when calling the print function on a Read object"""
