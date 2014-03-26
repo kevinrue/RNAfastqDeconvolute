@@ -44,7 +44,7 @@ class Read:
         # Trims the quality line to the same window
         self.quality_line = self.quality_line[start:stop]
 
-    def define_quality_status(self, threshold, percentage):
+    def define_quality_status(self, threshold, max_hases):
         """Sets the quality_status attribute according to whether stricly more than percentage of bases in the read are
          strictly below phred.
          Be careful to give a threshold that is the desired minimal Phred score -1. The reason can be demonstrated with
@@ -61,10 +61,25 @@ class Read:
         """
         # Converts all the ascii caracters in the quality line into their ascii code
         quality_ascii = [ord(c) for c in self.quality_line]
-        # Defines whether the read is acceptable (True) or not (False)
-        self.quality_status = scipy.percentile(quality_ascii, percentage) > threshold
-        # For training purpose: prints the value of the percentile used for threshold TODO remove in final code
-        #print('Test: percentile ({0}%): {1:.3f}\n'.format(percentage, scipy.percentile(quality_ascii, percentage)))
+        # reverse the list to have the 3' bases at the start of the list because they are more likely to be poor
+        # quality and the threshold will consequently be reached faster this way
+        quality_ascii.reverse()
+        # initialise a counter of quality bases
+        poor_quality = 0
+        # For each base quality score
+        for quality in quality_ascii:
+            # if the score if below the threshold
+            if quality < threshold:
+                # count the base as poor quality
+                poor_quality += 1
+            # if the number of bases below the allowed Phred is large than the allowed number of bases
+            if poor_quality > max_hases:
+                # set the quality status to False to mark the read for exclusion
+                self.quality_status = False
+                # otherwise, leave the quality status field to True to continue processing the read
+                # For training purpose: prints the value of the percentile used for threshold TODO remove in final code
+                #print('Test: percentile ({0}%): {1:.3f}\n'.format(percentage, scipy.percentile(quality_ascii,
+                # percentage)))
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
@@ -136,7 +151,7 @@ class ReadPair:
         self.forward_read.trim(start, stop)
         self.reverse_read.trim(start, stop)
 
-    def define_quality_status_forward(self, threshold , percentage):
+    def define_quality_status_forward(self, threshold, percentage):
         """Sets the quality_status attribute of the forward read according to whether stricly more than percentage of
         bases in the read are strictly below phred.
          Be careful to give a threshold that is the desired minimal Phred score -1. The reason can be demonstrated with
@@ -153,7 +168,7 @@ class ReadPair:
         """
         self.forward_read.define_quality_status_forward(threshold, percentage)
 
-    def define_quality_status_reverse(self, threshold , percentage):
+    def define_quality_status_reverse(self, threshold, percentage):
         """Sets the quality_status attribute of the forward read according to whether stricly more than percentage of
         bases in the read are strictly below phred.
          Be careful to give a threshold that is the desired minimal Phred score -1. The reason can be demonstrated with
@@ -219,7 +234,7 @@ class ReadPair:
         Returns:
             None
         """
-        return "%s\n%s"% (self.forward_read, self.reverse_read)
+        return "%s\n%s" % (self.forward_read, self.reverse_read)
 
 
 class Adapter:

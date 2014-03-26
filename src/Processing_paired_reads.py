@@ -80,6 +80,8 @@ import argparse
 import collections
 # Module datetime allows to print the current time at the start and the end of the script
 import datetime
+# Module math allows to obtain the integer part (floor) of a float number
+import math
 # Module os allows to get the current working directory, used for log information only.
 import os
 # Module os.path allows to check if paths and files exist.
@@ -210,37 +212,6 @@ def main():
         print("Info: Adapter filtering: skipped")
         # leave the adapters field as None
 
-    # If the user gave a phred threshold
-    if args.phred:
-        # Informative message
-        print(
-            'Info: Quality filtering: Maximum of {0:.3f}% bases in each mate are allowed strictly below {1:d} Phred '
-            'score.'.format(args.percent_max, args.phred))
-        # Converts the user-defined Phred threshold to a Ascii-compatible value appropriate for the later
-        # percentile-based test
-        if 1 <= args.illumina_version < 1.8:
-            ascii_phred_threshold = args.phred + 64 - 1
-        elif args.illumina_version >= 1.8:
-            ascii_phred_threshold = args.phred + 33 - 1
-        else:
-            print(
-                "Error: The Illumina version: %.1f is not supported; please check again your illumina version for "
-                "phred score encoding or seek advice about this script!\n" % args.illumina_version)
-            sys.exit(4)
-            # For training purpose: print the value TODO: remove in final code
-            #print(
-            #    "Test: ascii_phred_threshold: %i (Phred: %i + Illumina v%s offset: %i - 1 to avoid doing -1 for each
-            #  read "
-            #    "in the testing step)\n" % (
-            #        ascii_phred_threshold, args.phred, args.illumina_version, ascii_phred_threshold - args.phred + 1))
-    # if the user did not provide a phred threshold
-    else:
-        # Informative message
-        print("Info: Quality filtering: skipped")
-        # leave the args.phred value as None to skip quality filtering
-        # set ascii_phred_threshold to avoid a PyCharm warning message about possibly undefined variable later
-        ascii_phred_threshold = None
-
     # Check that the forward_file provided does exist
     if not os.path.isfile(args.forward_file):
         print("Error: File of forward reads was not found: %s" % args.forward_file)
@@ -261,6 +232,7 @@ def main():
         print("Error: Read length seems to be 0 (observed from the first read)")
     # Informative message:
     print("Info: Read length seems to be %i (observed from the first read)" % len(read_pair.forward_read.sequence_line))
+
     # If the user gave trimming values
     # Check that the trimmed read will have at least 1 base left
     if args.trim:
@@ -294,6 +266,40 @@ def main():
     else:  # Informative message
         print("Info: Trimming: skipped")
     # leave the args.trim value as None
+
+    # If the user gave a phred threshold
+    if args.phred:
+        # Informative message
+        print(
+            'Info: Quality filtering: Maximum of {0:.3f}% bases in each mate are allowed strictly below {1:d} Phred '
+            'score.'.format(args.percent_max, args.phred))
+        # Converts the user-defined Phred threshold to a Ascii-compatible value appropriate for the later
+        # percentile-based test
+        if 1 <= args.illumina_version < 1.8:
+            ascii_phred_threshold = args.phred + 64
+        elif args.illumina_version >= 1.8:
+            ascii_phred_threshold = args.phred + 33
+        else:
+            print(
+                "Error: The Illumina version: %.1f is not supported; please check again your illumina version for "
+                "phred score encoding or seek advice about this script!\n" % args.illumina_version)
+            sys.exit(4)
+        # Calculate the maximal number of poor quality bases allowed based on the length of the first read and the
+        # percentage of bases allowed below the threshold
+        quality_max = math.floor(args.percent_max * len(read_pair.forward_read.sequence_line))
+            # For training purpose: print the value TODO: remove in final code
+            #print(
+            #    "Test: ascii_phred_threshold: %i (Phred: %i + Illumina v%s offset: %i - 1 to avoid doing -1 for each
+            #  read "
+            #    "in the testing step)\n" % (
+            #        ascii_phred_threshold, args.phred, args.illumina_version, ascii_phred_threshold - args.phred + 1))
+    # if the user did not provide a phred threshold
+    else:
+        # Informative message
+        print("Info: Quality filtering: skipped")
+        # leave the args.phred value as None to skip quality filtering
+        # set ascii_phred_threshold to avoid a PyCharm warning message about possibly undefined variable later
+        ascii_phred_threshold = None
 
     # Initialises a ReadLogger to store the deconvolution statistics
     # More details in file Loggers.py, class ReadLogger
@@ -349,7 +355,8 @@ def main():
         if args.adapters:
             # TODO replace the 3 values in the line below by values parsed from the adaptor file and command
             # line
-            read_pair.forward_read.define_adapter_presence_substitutions_only(adapter_parser.adapters.forward.sequence, 3)
+            read_pair.forward_read.define_adapter_presence_substitutions_only(adapter_parser.adapters.forward.sequence,
+                                                                              3)
             # if the adapter was found in the forward read
             if read_pair.forward_read.adapter_present:
                 # log it
@@ -364,7 +371,8 @@ def main():
                 # and skip the rest of this loop (which is why we had to read the next read here)
                 continue
             # if we reach here the adapter was not found in the forward mate, check the reverse mate
-            read_pair.reverse_read.define_adapter_presence_substitutions_only(adapter_parser.adapters.reverse.sequence, 3)
+            read_pair.reverse_read.define_adapter_presence_substitutions_only(adapter_parser.adapters.reverse.sequence,
+                                                                              3)
             # if the adapter was found in the forward read
             if read_pair.reverse_read.adapter_present:
                 # log it
@@ -389,7 +397,7 @@ def main():
         if args.phred:
             # define_quality_status function uses percentile to check the quality much faster than a per-base
             #  counter)
-            read_pair.forward_read.define_quality_status(ascii_phred_threshold, args.percent_max)
+            read_pair.forward_read.define_quality_status(ascii_phred_threshold, quality_max)
             # if the forward read is poor quality
             if not read_pair.forward_read.quality_status:
                 # log it
@@ -404,7 +412,7 @@ def main():
                 # and skip the rest of this loop (which is why we had to read the next read here)
                 continue
             # if we reach here the quality of the forward mate was acceptable, check the reverse mate
-            read_pair.reverse_read.define_quality_status(ascii_phred_threshold, args.percent_max)
+            read_pair.reverse_read.define_quality_status(ascii_phred_threshold, quality_max)
             # if the forward read is poor quality
             if not read_pair.reverse_read.quality_status:
                 # log it
