@@ -4,11 +4,10 @@ __copyright__ = "Copyright 2014, GPLv2"
 """Empty docstring
 """
 
-
+# Module fuzzysearch allows approximate matching of a substring within a larger string
+import fuzzysearch
 # Custom Module which contains a few functions for approximate matching
 import ApproxMatch
-
-import fuzzysearch
 
 
 class Read:
