@@ -6,6 +6,8 @@ __copyright__ = "Copyright 2014, GPLv2"
 
 # Module collections allows a function to return multiple variable in a named tuple. Very clean.
 import collections
+# Module fuzzysearch allows approximate matching of a substring within another string
+import fuzzysearch
 # Module gzip allows to parse compressed files without having to first decompress them.
 import gzip
 # Module re allows to match regular expressions. Useful to see if a filename comes from BIG, MSU, or Conway.
@@ -219,8 +221,14 @@ class BarcodesParser:
         matches = []
         # For each expected barcode
         for expected in list(self.expected.keys()):
-            # check if the sequenced barcode is an approximate match to each of them
-            if ApproxMatch.approx_substitute(expected, sequenced_barcode, 1):
+            # check if the sequenced barcode is an approximate match to each of them (1 substitution allowed)
+            if ApproxMatch.approx_substitute(sequenced_barcode, expected, 1):
+            # The alternative below takes a few more seconds because it initialises additional variable useful for 
+            # browsing long sequences to find a smaller sequence. In this case, a direct comparison of an expected
+            # barcode and a sequenced barcode of the same length is faster.
+            # TODO: for a single mismatch approach, try a Levenshtein approach
+            #if len(fuzzysearch.find_near_matches(sequenced_barcode, expected, max_substitutions=1,
+            #                                 max_insertions=0, max_deletions=0, max_l_dist=None)):
                 matches.append(expected)
         # If the sequenced barcode is an approximate match of a unique expected barcode
         if len(matches) == 1:
