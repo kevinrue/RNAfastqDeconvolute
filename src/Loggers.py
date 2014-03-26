@@ -4,6 +4,8 @@ __copyright__ = "Copyright 2014, GPLv2"
 """Empty docstring
 """
 
+# Module os.path allows to extract the basename of a file
+import os.path
 # Module re allows to match regular expressions. Useful to see if a filename comes from BIG, MSU, or Conway.
 import re
 # Module sys allows to interrupt the script with an error code.
@@ -116,11 +118,13 @@ def set_report_filename_from_raw_file(filename):
     Returns:
         None. Sets the self.filename field instead.
     """
+    # Extracts the basename of the input file
+    basename = os.path.basename(filename)
     # For each know centre, test if the filename matches its typical pattern
     # Test for BGI (Raw_"anything"_1."anything")
     # keep the "Raw_anything" until the character before the _1
-    BGI_match = re.search('Raw_.*(?=_1\..*$)', filename)
-    test_match = re.search('single(?=_pe1.*)|.*thousands(?=_pe1.*)', filename)
+    BGI_match = re.search('Raw_.*(?=_1\..*$)', basename)
+    test_match = re.search('single(?=_pe1.*)|.*thousands(?=_pe1.*)', basename)
     if BGI_match:
         print("Info: Sequencing centre: BGI (Based on raw reads filename)")
         report_basename = BGI_match.group(0)
