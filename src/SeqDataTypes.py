@@ -58,24 +58,15 @@ class Read:
         Returns:
             None
         """
-        # Converts all the ascii caracters in the quality line into their ascii code
+        # Turn the list of quality characters into ascii values
         quality_ascii = [ord(c) for c in self.quality_line]
-        # reverse the list to have the 3' bases at the start of the list because they are more likely to be poor
-        # quality and the threshold will consequently be reached faster this way
-        quality_ascii.reverse()
-        # initialise a counter of quality bases
-        poor_quality = 0
-        # For each base quality score
-        for quality in quality_ascii:
-            # if the score if below the threshold
-            if quality < threshold:
-                # count the base as poor quality
-                poor_quality += 1
-            # if the number of bases below the allowed Phred is large than the allowed number of bases
-            if poor_quality > max_hases:
-                # set the quality status to False to mark the read for exclusion
-                self.quality_status = False
-                # otherwise, leave the quality status field to True to continue processing the read
+        # Sort the values (increasing order)
+        quality_ascii.sort()
+        # if the max_base-th ranked score is below threshold there are max_base+1 bases below threshold
+        if quality_ascii[max_hases] < threshold:
+            # therefore set the flag to reject the read
+            self.quality_status = False
+        return
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
@@ -108,8 +99,7 @@ class Read:
         # the mismatch distance will then be called on these pre-filtered reads to confirm whether it is an actual
         # substituted match or if the Levensthein match involved insertions and deletions
         # If 1 or more approximate matches of the adapter were found within a Levenshtein distance of max_substitutions
-        if len(fuzzysearch.find_near_matches(adapter, self.sequence_line, max_substitutions=max_substitutions,
-                                             max_insertions=0, max_deletions=0, max_l_dist=None)):
+        if fuzzysearch.susbstitutions_only.has_near_match_substitutions_ngrams(adapter, self.sequence_line, max_substitutions):
             self.adapter_present = True
             return
         # The simple fact of arriving here proves that no match was found, therefore leave the adapter

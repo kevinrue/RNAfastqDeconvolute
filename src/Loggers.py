@@ -70,9 +70,9 @@ class ReadLogger:
                 # Pre-calculates the ratios for clarity and to deal with the potential division by 0
                 ratio_accepted = self.accepted[sample_name] / self.assigned[sample_name] if self.assigned[
                     sample_name]  else 0
-                ratio_adapter = self.quality_excluded[sample_name] / self.assigned[sample_name] if self.assigned[
+                ratio_adapter = self.adapter_excluded[sample_name] / self.assigned[sample_name] if self.assigned[
                     sample_name]  else 0
-                ratio_quality = self.adapter_excluded[sample_name] / self.assigned[sample_name] if self.assigned[
+                ratio_quality = self.quality_excluded[sample_name] / self.assigned[sample_name] if self.assigned[
                     sample_name]  else 0
                 # write the statistics
                 report.write("%s\t%s\t%i\t%i\t%.3f\t%i\t%.3f\t%i\t%.3f\n" % (barcode,

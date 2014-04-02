@@ -286,7 +286,8 @@ def main():
             sys.exit(4)
         # Calculate the maximal number of poor quality bases allowed based on the length of the first read and the
         # percentage of bases allowed below the threshold
-        quality_max = math.floor(args.percent_max * len(read_pair.forward_read.sequence_line))
+        quality_max = math.floor(args.percent_max * len(read_pair.forward_read.sequence_line) / 100)
+        print("Test: quality_max: %i" % quality_max)
             # For training purpose: print the value TODO: remove in final code
             #print(
             #    "Test: ascii_phred_threshold: %i (Phred: %i + Illumina v%s offset: %i - 1 to avoid doing -1 for each
