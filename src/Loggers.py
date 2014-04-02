@@ -124,7 +124,7 @@ def set_report_filename_from_raw_file(filename):
     # Test for BGI (Raw_"anything"_1."anything")
     # keep the "Raw_anything" until the character before the _1
     BGI_match = re.search('Raw_.*(?=_1\..*$)', basename)
-    test_match = re.search('single(?=_pe1.*)|.*thousands(?=_pe1.*)', basename)
+    test_match = re.search('single.*(?=_pe1.*)|.*thousands(?=_pe1.*)', basename)
     if BGI_match:
         print("Info: Sequencing centre: BGI (Based on raw reads filename)")
         report_basename = BGI_match.group(0)

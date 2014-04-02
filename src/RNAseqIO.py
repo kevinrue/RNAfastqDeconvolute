@@ -519,11 +519,12 @@ def set_excluded_filenames_from_raw_file(filename):
     """
     # Extracts the basename of the input file
     basename = os.path.basename(filename)
+    #print("Test: basename: %s" % basename)
     # For each know centre, test if the filename matches its typical pattern
     # Test for BGI (Raw_"anything"_1."anything")
     # keep the "Raw_anything" until the character before the _1
     BGI_match = re.search('Raw_.*(?=_1\..*$)', basename)
-    test_match = re.search('single(?=_pe1.*)|.*thousands(?=_pe1.*)', basename)
+    test_match = re.search('single.*(?=_pe1.*)|.*thousands(?=_pe1.*)', basename)
     if BGI_match:
         unassigned_basename = BGI_match.group(0)
     # Test for our training files

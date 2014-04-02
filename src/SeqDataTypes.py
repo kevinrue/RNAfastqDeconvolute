@@ -9,7 +9,6 @@ import fuzzysearch
 # Custom Module which contains a few functions for approximate matching
 import ApproxMatch
 
-
 class Read:
     """Sequenced read and associated data"""
 
@@ -43,7 +42,7 @@ class Read:
         # Trims the quality line to the same window
         self.quality_line = self.quality_line[start:stop]
 
-    def define_quality_status(self, threshold, max_bases):
+    def define_quality_status(self, threshold, max_bases, quality_alphabet, length_alphabet):
         """Sets the quality_status attribute according to whether stricly more than percentage of bases in the read are
          strictly below phred.
          Be careful to give a threshold that is the desired minimal Phred score -1. The reason can be demonstrated with
@@ -58,18 +57,39 @@ class Read:
         Returns:
             None
         """
-        # turn the quality string into a list of characters
-        quality_symbols = list(self.quality_line)
-        # reverse the list to have the last bases (likely worst quality) first
-        quality_symbols.reverse()
-        # count the bases below Phred threshold and stop when exceed the max allowed
-        count = 0
-        for symbol in quality_symbols:
-            if ord(symbol) < threshold:
-                count += 1
-                if count > max_bases:
-                    self.quality_status = False
-                    return
+        # Initialise a dictionary of count for each symbol
+        counts = dict.fromkeys(quality_alphabet, 0)
+        # Count how many of each symbol are present
+        # this will crash for unexpected characters in the quality line
+        # the range was defined/hard-coded in the main script (Processing_paired_reads.py) and may need to be updated 
+        # with the technology. The expected range is limited to avoid many ASCII with 0 counts.
+        for symbol in self.quality_line:
+            counts[symbol] += 1
+        # Search the smallest ascii with non-zero count
+        ascii_index = 0
+        while ascii_index < length_alphabet and counts[quality_alphabet[ascii_index]]==0 :
+            ascii_index += 1
+        # Return an error and exit if no count was found
+        if ascii_index == len(counts):
+            print("Error: No count found for any ASCII symbol in quality line: ", counts)
+            sys.exit(3)
+        #print("Test: counts: ", counts)
+        #print("Test: counts(sum of values): ", sum(counts.values()))
+        # Given max_bases allowed under Phred threshold, add up the poor quality bases until max_bases is reached
+        # and if the corresponding Phred (percentile) is below the threshold, then it means max_bases is exceeded
+        while max_bases > 0:
+            #print("Test: max_bases: ", max_bases)
+            #print("Test: symbol: \"%s\" counts: %i" % (quality_alphabet[ascii_index], counts[quality_alphabet[ascii_index]]))
+            if counts[quality_alphabet[ascii_index]] > max_bases:
+                break
+            max_bases -= counts[quality_alphabet[ascii_index]]
+            ascii_index += 1
+            while ascii_index < length_alphabet and counts[quality_alphabet[ascii_index]]==0 :
+                ascii_index += 1
+        #print("Test:  max_bases_left = %i, Phred_score = %i, Ascii_value=%i\n" % (max_bases, ascii_index, ascii_index+ord(quality_alphabet[0])))
+        if ascii_index < threshold:
+            self.quality_status = False
+        return
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
