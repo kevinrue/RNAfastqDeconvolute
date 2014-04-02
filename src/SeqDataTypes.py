@@ -43,7 +43,7 @@ class Read:
         # Trims the quality line to the same window
         self.quality_line = self.quality_line[start:stop]
 
-    def define_quality_status(self, threshold, max_hases):
+    def define_quality_status(self, threshold, max_bases):
         """Sets the quality_status attribute according to whether stricly more than percentage of bases in the read are
          strictly below phred.
          Be careful to give a threshold that is the desired minimal Phred score -1. The reason can be demonstrated with
@@ -58,15 +58,18 @@ class Read:
         Returns:
             None
         """
-        # Turn the list of quality characters into ascii values
-        quality_ascii = [ord(c) for c in self.quality_line]
-        # Sort the values (increasing order)
-        quality_ascii.sort()
-        # if the max_base-th ranked score is below threshold there are max_base+1 bases below threshold
-        if quality_ascii[max_hases] < threshold:
-            # therefore set the flag to reject the read
-            self.quality_status = False
-        return
+        # turn the quality string into a list of characters
+        quality_symbols = list(self.quality_line)
+        # reverse the list to have the last bases (likely worst quality) first
+        quality_symbols.reverse()
+        # count the bases below Phred threshold and stop when exceed the max allowed
+        count = 0
+        for symbol in quality_symbols:
+            if ord(symbol) < threshold:
+                count += 1
+                if count > max_bases:
+                    self.quality_status = False
+                    return
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
