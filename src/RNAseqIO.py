@@ -86,10 +86,9 @@ class FastqgzParser:
         Returns:
             The next sequenced read in the file.
         """
-        # Replace the barcode in the header line by a substring of the expected length
         # Will crash if the expected barcodes are longer than the sequence between # and /
         # Return a Read object
-        return SeqDataTypes.Read(re.sub(self.barcode_pattern, "#\\1/", self.file_handler.readline().strip()),
+        return SeqDataTypes.Read(self.file_handler.readline().strip(),
                                  self.file_handler.readline().strip(),
                                  self.file_handler.readline().strip(),
                                  self.file_handler.readline().strip())
@@ -260,7 +259,7 @@ class BarcodesParser:
         Returns:
             The sequenced barcode.
         """
-        return re.search(self.barcode_pattern, read.header_line).group(1)
+        return self.barcode_pattern.search(read.header_line).group(1)
 
 
 class AdapterParser:
