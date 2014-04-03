@@ -299,13 +299,17 @@ def main():
         print("Info: Quality filtering: skipped")
         # leave the args.phred value as None to skip quality filtering
 
+    # Extracts a default basename from the forward raw filename for default files such as
+    # the report and the unassigned reads.
+    basename_in = RNAseqIO.set_basename_from_raw_file(args.forward_file)
+        
     # Initialises a ReadLogger to store the deconvolution statistics
     # More details in file Loggers.py, class ReadLogger
-    read_logger = Loggers.ReadLogger(args.forward_file, barcode_parser)
+    read_logger = Loggers.ReadLogger(args.forward_file, barcode_parser, basename_in)
 
     # Initialise a FastqgzWriter to write the deconvoluted reads to the corresponding outfile
     # More details in file RNAseqIO.py, class FastqgzWriter
-    fastq_writers = RNAseqIO.FastqWriter(args.forward_file, list(barcode_parser.expected.values()))
+    fastq_writers = RNAseqIO.FastqWriter(basename_in, list(barcode_parser.expected.values()))
 
     # Parses the reads and process them
     # While the last read parsed is not empty (= end of file not reached), process the read
