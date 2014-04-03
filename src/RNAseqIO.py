@@ -362,7 +362,8 @@ class FastqWriter:
     def __init__(self, basename_raw, samples):
         """Constructor for FastqWriter"""
         # Create a dictionary of file handlers (values) associated to each sample (key)
-        self.outfiles = {}
+        self.accepted_outfiles = {}
+        self.filtered_outfiles = {}
         self.initialise_fastq_outfiles(basename_raw, samples)
 
     def initialise_fastq_outfiles(self, basename_raw, samples):
@@ -384,18 +385,23 @@ class FastqWriter:
         outfiles = {}
         # To save pairs of file streams we will use the collections module again
         filestream_pair = collections.namedtuple('FileStreamPair', ['forward', 'reverse'])
-        # For each sample name
+        # For each sample name,
         for sample in samples:
             # Open a file stream for the accepted forward read toward a file name sample_pe1.fastq.gz
-            self.outfiles[sample] = filestream_pair(forward=open("%s_pe1.fastq" % sample, 'w'),
+            self.accepted_outfiles[sample] = filestream_pair(forward=open("%s_pe1.fastq" % sample, 'w'),
                                                     reverse=open("%s_pe2.fastq" % sample, 'w'))
+        # For each sample name,
+        for sample in samples:
+            # Open a file stream for the filtered forward read toward a file name sample_pe1.fastq.gz
+            self.filtered_outfiles[sample] = filestream_pair(forward=open("%s_pe1.excluded" % sample, 'w'),
+                                                    reverse=open("%s_pe2.excluded" % sample, 'w'))
         # Create an additional pair of file streams for the unassigned reads
         # Note that the sample field of unassigned reads was set to False
-        self.outfiles[False] = filestream_pair(forward=open("%s_1.excluded" % basename_raw, 'w'),
+        self.filtered_outfiles[False] = filestream_pair(forward=open("%s_1.excluded" % basename_raw, 'w'),
                                                reverse=open("%s_2.excluded" % basename_raw, 'w'))
 
 
-    def write_reads(self, read_pair):
+    def write_accepted_reads(self, read_pair):
         """Write the forward and reverse read in the corresponding filestream_pair of file stream.
 
             Note that only the forward_read was deconvoluted. The barcode of the reverse read is assumed to be the same.
@@ -406,12 +412,28 @@ class FastqWriter:
             None
         """
         # get the filestream_pair of file stream corresponding to the sample the forward read was deconvoluted to
-        filestream_pair = self.outfiles[read_pair.sample]
+        filestream_pair = self.accepted_outfiles[read_pair.sample]
         # write the forward read in the forward file
         filestream_pair.forward.write("%s\n" % read_pair.forward_read)
         # write the reverse read in the reverse file
         filestream_pair.reverse.write("%s\n" % read_pair.reverse_read)
 
+    def write_filtered_reads(self, read_pair):
+        """Write the forward and reverse read in the corresponding filestream_pair of filestreams.
+
+            Note that only the forward_read was deconvoluted. The barcode of the reverse read is assumed to be the same.
+        Args:
+            self, read
+
+        Returns:
+            None
+        """
+        # get the filestream_pair of file stream corresponding to the sample the forward read was deconvoluted to
+        filestream_pair = self.filtered_outfiles[read_pair.sample]
+        # write the forward read in the forward file
+        filestream_pair.forward.write("%s\n" % read_pair.forward_read)
+        # write the reverse read in the reverse file
+        filestream_pair.reverse.write("%s\n" % read_pair.reverse_read)
 
     def close_files(self):
         """Closes all the writing file streams to save the files.
@@ -422,7 +444,10 @@ class FastqWriter:
         Returns:
             None
         """
-        for pair in self.outfiles.values():
+        for pair in self.accepted_outfiles.values():
+            pair.forward.close()
+            pair.reverse.close()
+        for pair in self.filtered_outfiles.values():
             pair.forward.close()
             pair.reverse.close()
 

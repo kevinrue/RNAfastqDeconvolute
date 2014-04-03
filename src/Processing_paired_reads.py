@@ -337,7 +337,7 @@ def main():
                 read_logger.unassigned += 1
                 # write the read (appropriate files will be dynamically selected: read.sample == False leads to
                 # file of excluded reads)
-                fastq_writers.write_reads(read_pair)
+                fastq_writers.write_filtered_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -363,11 +363,8 @@ def main():
             if read_pair.forward_read.adapter_present:
                 # log it
                 read_logger.adapter_excluded[read_pair.sample] += 1
-                # change its assigned sample to False to write the read in the excluded file using fastq_writers
-                # Now that the read was logged, this will not affect the statistics
-                read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastq_writers.write_reads(read_pair)
+                fastq_writers.write_filtered_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -379,11 +376,8 @@ def main():
             if read_pair.reverse_read.adapter_present:
                 # log it
                 read_logger.adapter_excluded[read_pair.sample] += 1
-                # change its assigned sample to False to write the read in the excluded file
-                # Now that the  read was logged, this will not affect the statistics
-                read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastq_writers.write_reads(read_pair)
+                fastq_writers.write_filtered_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -405,11 +399,8 @@ def main():
             if not read_pair.forward_read.quality_status:
                 # log it
                 read_logger.quality_excluded[read_pair.sample] += 1
-                # change its assigned sample to False to write the read in the excluded file
-                # Now that the  read was logged, this will not affect the statistics
-                read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastq_writers.write_reads(read_pair)
+                fastq_writers.write_filtered_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -421,11 +412,8 @@ def main():
             if not read_pair.reverse_read.quality_status:
                 # log it
                 read_logger.quality_excluded[read_pair.sample] += 1
-                # change its assigned sample to False to write the read in the excluded file
-                # Now that the  read was logged, this will not affect the statistics
-                read_pair.sample = False
                 # write the read (now to the excluded file)
-                fastq_writers.write_reads(read_pair)
+                fastq_writers.write_filtered_reads(read_pair)
                 # and no need to further process it, move to the next read
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
@@ -439,7 +427,7 @@ def main():
         # log it
         read_logger.accepted[read_pair.sample] += 1
         # write the read (appropriate files will be dynamically selected)
-        fastq_writers.write_reads(read_pair)
+        fastq_writers.write_accepted_reads(read_pair)
 
         # Moves on to the next (we don't want to process the same read eternally, do we?)
         read_pair = read_pair_parser.next_read_pair()
