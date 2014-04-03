@@ -322,26 +322,25 @@ def main():
         # run the while function on both the forward and reverse read simultaneously
 
         # DECONVOLUTION #
-        # Only perform deconvolution step if a barcode file was given
-        if args.barcodes:
-            # Define which sample the read should be assigned to
-            barcode_parser.assign_read_to_sample(read_pair, barcode_length)
-            #print("Test: read.sample: %s\n" % forward_read.sample)
-            # if the barcode was assigned to a unique sample
-            if read_pair.sample:
-                # log it
-                read_logger.assigned[read_pair.sample] += 1
-            # if the barcode was not assigned to any sample
-            else:
-                # log it
-                read_logger.unassigned += 1
-                # write the read (appropriate files will be dynamically selected: read.sample == False leads to
-                # file of excluded reads)
-                fastq_writers.write_filtered_reads(read_pair)
-                # and no need to further process it, move to the next read
-                read_pair = read_pair_parser.next_read_pair()
-                # and skip the rest of this loop (which is why we had to read the next read here)
-                continue
+        # Barcodes are mandatory, therefore the deconvolution step cannot be skipped
+        # Define which sample the read should be assigned to
+        barcode_parser.assign_read_to_sample(read_pair, barcode_length)
+        #print("Test: read.sample: %s\n" % forward_read.sample)
+        # if the barcode was assigned to a unique sample
+        if read_pair.sample:
+            # log it
+            read_logger.assigned[read_pair.sample] += 1
+        # if the barcode was not assigned to any sample
+        else:
+            # log it
+            read_logger.unassigned += 1
+            # write the read (appropriate files will be dynamically selected: read.sample == False leads to
+            # file of excluded reads)
+            fastq_writers.write_filtered_reads(read_pair)
+            # and no need to further process it, move to the next read
+            read_pair = read_pair_parser.next_read_pair()
+            # and skip the rest of this loop (which is why we had to read the next read here)
+            continue
 
         # TRIMMING #
         # Only perform the trimming step if trimming values were given and at least one of them is different from 0
