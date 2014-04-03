@@ -110,9 +110,9 @@ class Read:
             None
         """
         # Solves the straightforward case where the adapter is exactly present in the read
-        if adapter in self.sequence_line:
-            self.adapter_present = True
-            return
+        #if adapter in self.sequence_line:
+        #    self.adapter_present = True
+        #    return
         # Otherwise, look for an approximate match of the adapter, less than max_substitutions different
         # First do a preliminary (hopefully faster) check whether the adapter is present as an approximate match in
         # the read sequence within a Levenshtein distance equal to the allowed number of substitutions
