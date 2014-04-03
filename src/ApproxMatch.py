@@ -19,17 +19,15 @@ def approx_substitute(str1, str2, max_substitutions):
         Boolean. TRUE if str1 is less than ax_substitutions away from str2, FALSE otherwise.
     """
     # Solves a simple scenario which does not require to parse the sequences.
-    if len(str1) != len(str2):
-        return False
+    #if len(str1) != len(str2):
+    #    return False
     # If we reach here, we know that the two strings are the same length, therefore len(str1) is synonym to len(str2)
-    # Initialise a counter of substitutions between the two strings
-    substitutions = 0
-    # For each (index, character) value pair in str1
-    for (index, str1_char) in enumerate(str1):
-        # add 1 if the characters from str1 and str2 are different, add 0 otherwise
-        substitutions += (0 if str1_char == str2[index] else 1)
-        # time saver: if the counter exceeds max_substitutions at some stage, don't bother checking the rest...
-        if substitutions > max_substitutions:
+    # For each (index, character) value pair in str1,str2
+    for (c1, c2) in zip(str1, str2):
+        # remove 1 if the characters from str1 and str2 are different
+        max_substitutions -= c1 == c2
+        # time saver: if the counter goes below zero, more substitutions than allowed were found
+        if max_substitutions < 0:
             # ... just return FALSE
             return False
     # If max_substitutions is never reached, the function will eventually leave the loop above
