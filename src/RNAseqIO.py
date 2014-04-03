@@ -178,6 +178,7 @@ class BarcodesParser:
         self.barcode_length = len(list(self.expected.keys())[0])
         # Assuming the barcode is in the header after # symbol, compile once and for all a motif/pattern
         self.barcode_pattern = re.compile("#([ATGCN]{%i})[ATGCN]*/" % self.barcode_length)
+        #print("Test: barcode_pattern: #([ATGCN]{%i})[ATGCN]*/" % self.barcode_length)
 
     
     def assign_read_to_sample(self, read_pair, barcode_length):
@@ -259,6 +260,7 @@ class BarcodesParser:
         Returns:
             The sequenced barcode.
         """
+        #print("Test: barcode_header: %s" % self.barcode_pattern.search(read.header_line).group(1))
         return self.barcode_pattern.search(read.header_line).group(1)
 
 

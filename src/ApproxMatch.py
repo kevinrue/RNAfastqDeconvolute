@@ -25,7 +25,7 @@ def approx_substitute(str1, str2, max_substitutions):
     # For each (index, character) value pair in str1,str2
     for (c1, c2) in zip(str1, str2):
         # remove 1 if the characters from str1 and str2 are different
-        max_substitutions -= c1 == c2
+        max_substitutions -= c1 != c2
         # time saver: if the counter goes below zero, more substitutions than allowed were found
         if max_substitutions < 0:
             # ... just return FALSE
