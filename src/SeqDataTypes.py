@@ -57,8 +57,6 @@ class Read:
         Returns:
             None
         """
-        # Initialise a dictionary of count for each symbol
-        ascii_counts = dict.fromkeys(quality_alphabet, 0)
         # Count how many of each symbol are present
         # this will crash for unexpected characters in the quality line
         # the range was defined/hard-coded in the main script (Processing_paired_reads.py) and may need to be updated 
