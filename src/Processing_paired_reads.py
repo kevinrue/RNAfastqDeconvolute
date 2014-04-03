@@ -182,11 +182,9 @@ def main():
     barcode_parser.parse_barcode_file()
     # For training purposes, print the dictionary mapping TODO: remove in final code
     #print("Test: barcode_parser.expected: %s" % barcode_parser.expected)
-    # From the first barcode in the variable, define the expected barcode length, assuming all barcodes are the same
-    # length
-    barcode_length = len(list(barcode_parser.expected.keys())[0])
     # Informative message
-    print("Info: Expected barcode length: %i (observed from a sample in barcode file)" % barcode_length)
+    print("Info: Expected barcode length: %i (observed from a sample in barcode file)" % barcode_parser.barcode_length)
+
 
     # If the user gave an adapter file
     if args.adapters:
@@ -211,7 +209,7 @@ def main():
         # Informative message
         print("Info: Adapter filtering: skipped")
         # leave the adapters field as None
-
+        
     # Check that the forward_file provided does exist
     if not os.path.isfile(args.forward_file):
         print("Error: File of forward reads was not found: %s" % args.forward_file)
@@ -221,7 +219,7 @@ def main():
         print("Error: File of reverse reads was not found: %s" % args.reverse_file)
         sys.exit(3)
     # Opens the forward and reverse files in a FastqgzPairParser object
-    read_pair_parser = RNAseqIO.FastqgzPairParser(args.forward_file, args.reverse_file)
+    read_pair_parser = RNAseqIO.FastqgzPairParser(args.forward_file, args.reverse_file, barcode_parser.barcode_pattern)
     read_pair = read_pair_parser.next_read_pair()
     # The Parser will automatically coordinate the parsing of forward and reverse files
 
@@ -324,7 +322,7 @@ def main():
         # DECONVOLUTION #
         # Barcodes are mandatory, therefore the deconvolution step cannot be skipped
         # Define which sample the read should be assigned to
-        barcode_parser.assign_read_to_sample(read_pair, barcode_length)
+        barcode_parser.assign_read_to_sample(read_pair, barcode_parser.barcode_length)
         #print("Test: read.sample: %s\n" % forward_read.sample)
         # if the barcode was assigned to a unique sample
         if read_pair.sample:

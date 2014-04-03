@@ -25,10 +25,10 @@ import ApproxMatch
 class FastqgzPairParser:
     """Synchronises the parsing of a forward and a reverse compressed fastq files."""
 
-    def __init__(self, forward_file, reverse_file):
+    def __init__(self, forward_file, reverse_file, expected_barcode_pattern):
         """Constructor for ReadPairParser"""
-        self.forward_parser = FastqgzParser(forward_file)
-        self.reverse_parser = FastqgzParser(reverse_file)
+        self.forward_parser = FastqgzParser(forward_file, expected_barcode_pattern)
+        self.reverse_parser = FastqgzParser(reverse_file, expected_barcode_pattern)
 
     def next_read_pair(self):
         """Reads the next mate pair.
@@ -58,12 +58,13 @@ class FastqgzPairParser:
 class FastqgzParser:
     """Parses compressed fastq files."""
 
-    def __init__(self, filename):
+    def __init__(self, filename, expected_barcode_pattern):
         """Constructor for FastqqzParser
         :rtype : FastqgzParser
         """
         self.filename = filename
         self.file_handler = gzip.open(self.filename, 'rt')
+        self.barcode_pattern = expected_barcode_pattern
 
     def open(self):
         """Opens the file stream.
@@ -85,12 +86,13 @@ class FastqgzParser:
         Returns:
             The next sequenced read in the file.
         """
-        header_line = self.file_handler.readline().strip()
-        sequence_line = self.file_handler.readline().strip()
-        separator_line = self.file_handler.readline().strip()
-        quality_line = self.file_handler.readline().strip()
-        return SeqDataTypes.Read(header_line, sequence_line, separator_line, quality_line)
-
+        # Replace the barcode in the header line by a substring of the expected length
+        # Will crash if the expected barcodes are longer than the sequence between # and /
+        # Return a Read object
+        return SeqDataTypes.Read(re.sub(self.barcode_pattern, "#\\1/", self.file_handler.readline().strip()),
+                                 self.file_handler.readline().strip(),
+                                 self.file_handler.readline().strip(),
+                                 self.file_handler.readline().strip())
     # The first listed Read is a module. The second listed read is an objectClass type Read. This code takes each of
     # the four variables (header_line, sequence_line, separator_line, quality_line) and inserts them into one single
     # variable.
@@ -122,6 +124,8 @@ class BarcodesParser:
         self.expected = {}
         self.mismatched = {}
         self.unmatched = []
+        self.barcode_length = None
+        self.barcode_pattern = None
 
     def parse_barcode_file(self):
         """Parses the file provided with the expected barcodes and saves them in the self.expected variable.
@@ -170,7 +174,13 @@ class BarcodesParser:
                 self.expected[barcodes[index]] = sample_ids[index]
                 # Do not return anything, the mapping is stored in the self.expected attribute of the BarcodesParser
                 # object
+        # From the first barcode in the variable, define the expected barcode length, assuming all barcodes are the same
+        # length
+        self.barcode_length = len(list(self.expected.keys())[0])
+        # Assuming the barcode is in the header after # symbol, compile once and for all a motif/pattern
+        self.barcode_pattern = re.compile("#([ATGCN]{%i})[ATGCN]*/" % self.barcode_length)
 
+    
     def assign_read_to_sample(self, read_pair, barcode_length):
         """Given a read object and the expected length of a barcode, check its barcode against the expected and
         observed barcodes to define the sample it should be assigned to.
@@ -250,7 +260,7 @@ class BarcodesParser:
         Returns:
             The sequenced barcode.
         """
-        return read.header_line.split('#')[1][:barcode_length]
+        return re.search(self.barcode_pattern, read.header_line).group(1)
 
 
 class AdapterParser:
