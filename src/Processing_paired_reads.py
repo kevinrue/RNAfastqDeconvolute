@@ -78,6 +78,9 @@ __copyright__ = "Copyright 2014, GPLv2"
 import argparse
 # Module collections allows to store multiple variable in a named tuple. Very clean for start and stop trimming indices
 import collections
+# Module copy allows to create copies of mutable objects. This is useful to avoid creating multiple times the same
+# dictionary for example. A unique original is created once, and the script works on copies.
+import copy
 # Module datetime allows to print the current time at the start and the end of the script
 import datetime
 # Module math allows to obtain the integer part (floor) of a float number
@@ -294,6 +297,7 @@ def main():
         # Keys: expected ASCII symbols based on Illumina version
         # Values: initialised at zero
         ascii_counts = dict.fromkeys(illumina_ascii_alphabet, 0)
+        #print("Test: ascii_counts: ", ascii_counts)
         #print("Test: quality_max_bases: %i" % quality_max_bases)
     # if the user did not provide a phred threshold
     else:
@@ -392,10 +396,12 @@ def main():
         # QUALITY #
         # Only perform the quality filtering step if a Phred threshold was provided (not None, see above)
         if args.phred:
+            #print("Test: ascii_counts before forward: ", ascii_counts)
             # define_quality_status function uses percentile to check the quality much faster than a per-base
             #  counter)
             read_pair.forward_read.define_quality_status(args.phred, quality_max_bases, illumina_ascii_alphabet,
-                                                         length_alphabet, ascii_counts)
+                                                         length_alphabet, copy.copy(ascii_counts))
+            #print("Test: ascii_counts after forward: ", ascii_counts)
             # if the forward read is poor quality
             if not read_pair.forward_read.quality_status:
                 # log it
@@ -406,9 +412,11 @@ def main():
                 read_pair = read_pair_parser.next_read_pair()
                 # and skip the rest of this loop (which is why we had to read the next read here)
                 continue
+            #print("Test: ascii_counts before reverse: ", ascii_counts)
             # if we reach here the quality of the forward mate was acceptable, check the reverse mate
             read_pair.reverse_read.define_quality_status(args.phred, quality_max_bases, illumina_ascii_alphabet,
-                                                         length_alphabet, ascii_counts)
+                                                         length_alphabet, copy.copy(ascii_counts))
+            #print("Test: ascii_counts after reverse: ", ascii_counts)
             # if the forward read is poor quality
             if not read_pair.reverse_read.quality_status:
                 # log it

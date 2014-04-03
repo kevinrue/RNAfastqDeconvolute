@@ -24,7 +24,6 @@ class Read:
         # If adapter is present then set to True, otherwise set to False
         # Defaults to False (if no adapter check is done, it is assumed to be absent)
         self.adapter_present = False
-
     def trim(self, start, stop):
         """Crops the read sequence and associated quality_line keeping positions start to stop.
         Be careful to give the positions in Python position numbering (starts at 0). The pain of calculating the proper
@@ -57,6 +56,7 @@ class Read:
         Returns:
             None
         """
+        # Need to assign the dictionary by value to avoid altering the original copy
         # Count how many of each symbol are present
         # this will crash for unexpected characters in the quality line
         # the range was defined/hard-coded in the main script (Processing_paired_reads.py) and may need to be updated 
@@ -87,7 +87,6 @@ class Read:
         #print("Test:  max_bases_left = %i, Phred_score = %i, Ascii_value=%i\n" % (max_bases, ascii_index, ascii_index+ord(quality_alphabet[0])))
         if ascii_index < threshold:
             self.quality_status = False
-        return
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
