@@ -262,7 +262,7 @@ def main():
                 "Info: Trimming: %i bases will be trimmed from the left and %i bases will be trimmed from the right, "
                 "leaving %i bases in the trimmed read." % (
                     args.trim[0], args.trim[1], len(read_pair.forward_read.sequence_line) - sum(args.trim)))
-    # if the user did not provide a phred threshold
+    # if the user did not provide trimming values
     else:  # Informative message
         print("Info: Trimming: skipped")
     # leave the args.trim value as None
