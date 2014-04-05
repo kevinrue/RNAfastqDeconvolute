@@ -5,7 +5,7 @@ __copyright__ = "Copyright 2014, GPLv2"
 """
 
 # Module fuzzysearch allows approximate matching of a substring within a larger string
-import fuzzysearch
+from fuzzysearch.susbstitutions_only import has_near_match_substitutions_ngrams
 # Custom Module which contains a few functions for approximate matching
 import ApproxMatch
 
@@ -103,7 +103,7 @@ class Read:
         # the mismatch distance will then be called on these pre-filtered reads to confirm whether it is an actual
         # substituted match or if the Levensthein match involved insertions and deletions
         # If 1 or more approximate matches of the adapter were found within a Levenshtein distance of max_substitutions
-        if len(fuzzysearch.find_near_matches(adapter, self.sequence_line, max_substitutions)):
+        if has_near_match_substitutions_ngrams(adapter, self.sequence_line, max_substitutions):
             # scan the read sequence for a potential substituted match
             # for each subsequence of the sequence_line of length identical to the adapter (last starting position is
             # length of the adapter before the end of the read)
