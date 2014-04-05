@@ -456,7 +456,7 @@ def main():
     fastq_writers.close_files()
 
     # Informative message
-    print("Info: End time:", datetime.datetime.now().replace(microsecond=0))
+    print("Info: End time:", format(datetime.datetime.now().replace(microsecond=0)))
 
 
 if __name__ == "__main__":
