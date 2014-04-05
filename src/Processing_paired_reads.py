@@ -274,9 +274,9 @@ def main():
         # Converts the user-defined Phred threshold to a Ascii-compatible value appropriate for the later
         # percentile-based test
         if 1 <= args.illumina_version < 1.8:
-            ascii_phred_threshold = chr(args.phred + 64)
+            ascii_phred_threshold = args.phred + 64
         elif args.illumina_version >= 1.8:
-            ascii_phred_threshold = chr(args.phred + 33)
+            ascii_phred_threshold = args.phred + 33
         else:
             print(
                 "Error: The Illumina version: %.1f is not supported; please check again your illumina version for "
@@ -428,9 +428,6 @@ def main():
     #print("Test: read_logger.quality_excluded:", read_logger.quality_excluded)
     #print("Test: read_logger.adapter_excluded:", read_logger.adapter_excluded)
     print('Info: Total reads processed: {0:,}'.format(sum(read_logger.assigned.values()) + read_logger.unassigned))
-
-    # Close the file stream of the raw read files
-    read_pair_parser.close()
 
     # Write the deconvolution statistics in the report file
     read_logger.write_stats()
