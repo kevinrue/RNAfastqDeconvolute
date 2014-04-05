@@ -58,24 +58,19 @@ class Read:
         Returns:
             None
         """
-        # Converts all the ascii caracters in the quality line into their ascii code
-        quality_ascii = [ord(c) for c in self.quality_line]
-        # reverse the list to have the 3' bases at the start of the list because they are more likely to be poor
-        # quality and the threshold will consequently be reached faster this way
-        quality_ascii.reverse()
         # initialise a counter of quality bases
         poor_quality = 0
         # For each base quality score
-        for quality in quality_ascii:
+        for quality in reversed(self.quality_line):
             # if the score if below the threshold
             if quality < threshold:
                 # count the base as poor quality
                 poor_quality += 1
-            # if the number of bases below the allowed Phred is large than the allowed number of bases
-            if poor_quality > max_hases:
-                # set the quality status to False to mark the read for exclusion
-                self.quality_status = False
-                # otherwise, leave the quality status field to True to continue processing the read
+                # if the number of bases below the allowed Phred is large than the allowed number of bases
+                if poor_quality > max_hases:
+                    # set the quality status to False to mark the read for exclusion
+                    self.quality_status = False
+                    # otherwise, leave the quality status field to True to continue processing the read
 
     def define_adapter_presence_substitutions_only(self, adapter, max_substitutions):
         """Sets the adapter_absent attribute according to whether a match is found with a number of substitutions
