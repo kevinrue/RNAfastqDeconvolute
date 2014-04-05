@@ -276,9 +276,9 @@ def main():
         # Converts the user-defined Phred threshold to a Ascii-compatible value appropriate for the later
         # percentile-based test
         if 1 <= args.illumina_version < 1.8:
-            ascii_phred_threshold = args.phred + 64
+            ascii_phred_threshold = chr(args.phred + 64)
         elif args.illumina_version >= 1.8:
-            ascii_phred_threshold = args.phred + 33
+            ascii_phred_threshold = chr(args.phred + 33)
         else:
             print(
                 "Error: The Illumina version: %.1f is not supported; please check again your illumina version for "
@@ -456,7 +456,7 @@ def main():
     fastq_writers.close_files()
 
     # Informative message
-    print("Info: End time:", datetime.datetime.now().replace(microsecond=0))
+    print("Info: End time:", format(datetime.datetime.now().replace(microsecond=0)))
 
 
 if __name__ == "__main__":

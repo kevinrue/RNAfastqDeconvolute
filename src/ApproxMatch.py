@@ -24,16 +24,17 @@ def approx_substitute(str1, str2, max_substitutions):
     # If we reach here, we know that the two strings are the same length, therefore len(str1) is synonym to len(str2)
     # Initialise a counter of substitutions between the two strings
     substitutions = 0
-    # For each (index, character) value pair in str1
-    for (index, str1_char) in enumerate(str1):
-        # add 1 if the characters from str1 and str2 are different, add 0 otherwise
-        substitutions += (0 if str1_char == str2[index] else 1)
-        # time saver: if the counter exceeds max_substitutions at some stage, don't bother checking the rest...
-        if substitutions > max_substitutions:
-            # ... just return FALSE
-            return False
+    # For each pair of characters (str1_char, str2_char) from the same indexes in str1 and str2...
+    for (str1_char, str2_char) in zip(str1, str2):
+        # if the characters are different...
+        if str1_char != str2_char:
+            substitutions += 1
+            # time saver: if the counter exceeds max_substitutions at some stage, don't bother checking the rest...
+            if substitutions > max_substitutions:
+                # ... just return FALSE
+                return False
     # If max_substitutions is never reached, the function will eventually leave the loop above
-    # The simple fact of arriving here proves that str1 is less than max_substitutions away from str2,
+    # The simple fact of arriving here proves that str1 is at most max_substitutions away from str2,
     # therefore return TRUE
     return True
 
