@@ -26,13 +26,16 @@ def approx_substitute(str1, str2, max_substitutions):
     for (c1, c2) in zip(str1, str2):
         # remove 1 if the characters from str1 and str2 are different
         max_substitutions -= c1 != c2
+        #print("Test: str1:%s str2:%s substitutions: %i" % (c1, c2, max_substitutions))
         # time saver: if the counter goes below zero, more substitutions than allowed were found
         if max_substitutions < 0:
             # ... just return FALSE
+            #print("Test: approx_substitute: %s != %s " % (str1, str2))
             return False
     # If max_substitutions is never reached, the function will eventually leave the loop above
     # The simple fact of arriving here proves that str1 is less than max_substitutions away from str2,
     # therefore return TRUE
+    #print("Test: approx_substitute: %s == %s " % (str1, str2))
     return True
 
 

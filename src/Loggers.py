@@ -58,6 +58,7 @@ class ReadLogger:
             None
         """
         # Opens the report file
+        #print("Test: expected barcodes:", self.barcode_parser.expected)
         with open(self.filename, "w") as report:
             # write the header line
             report.write(
@@ -65,6 +66,7 @@ class ReadLogger:
                 "filtered\tQuality filtered\t% quality filtered\n")
             # for each expected barcode
             for barcode in self.barcode_parser.expected.keys():
+                #print("Test: expected_barcodes:", barcode.decode("ascii"))
                 # get the corresponding sample name (instead of getting it everytime below)
                 sample_name = self.barcode_parser.expected[barcode]
                 # Pre-calculates the ratios for clarity and to deal with the potential division by 0
@@ -75,7 +77,7 @@ class ReadLogger:
                 ratio_quality = self.quality_excluded[sample_name] / self.assigned[sample_name] if self.assigned[
                     sample_name]  else 0
                 # write the statistics
-                report.write("%s\t%s\t%i\t%i\t%.3f\t%i\t%.3f\t%i\t%.3f\n" % (barcode,
+                report.write("%s\t%s\t%i\t%i\t%.3f\t%i\t%.3f\t%i\t%.3f\n" % (barcode.decode("ascii"),
                                                                              sample_name,
                                                                              self.assigned[sample_name],
                                                                              self.accepted[sample_name],

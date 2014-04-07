@@ -42,18 +42,6 @@ class FastqgzPairParser:
         # Fill in the tuple structure with the adapter objects and return it
         return SeqDataTypes.ReadPair(self.forward_parser.next_read(), self.reverse_parser.next_read())
 
-    def close(self):
-        """Closes the two file streams.
-
-        Args:
-            self
-
-        Returns:
-            None
-        """
-        self.forward_parser.close()
-        self.reverse_parser.close()
-
 
 class FastqgzParser:
     """Parses compressed fastq files."""
@@ -63,8 +51,8 @@ class FastqgzParser:
         :rtype : FastqgzParser
         """
         self.filename = filename
-        self.file_handler = gzip.open(self.filename, 'rt')
         self.barcode_pattern = expected_barcode_pattern
+        self.open()
 
     def open(self):
         """Opens the file stream.
@@ -75,7 +63,16 @@ class FastqgzParser:
         Returns:
             None
         """
-        self.file_handler = gzip.open(self.filename, "rt")
+        lines = [
+            line.strip() for line in
+            gzip.open(self.filename, "rb").read().splitlines()
+        ]
+        def next_read_iter(lines=lines):
+            for index in range(0, len(lines), 4):
+                yield SeqDataTypes.Read(lines[index], lines[index + 1], lines[index + 2], lines[index + 3])
+            while True:
+                yield SeqDataTypes.Read(b'', b'', b'', b'')
+        self._next_read_iter = next_read_iter()
 
     def next_read(self):
         """Parses and return the next sequenced read in the file.
@@ -88,24 +85,11 @@ class FastqgzParser:
         """
         # Will crash if the expected barcodes are longer than the sequence between # and /
         # Return a Read object
-        return SeqDataTypes.Read(self.file_handler.readline().strip(),
-                                 self.file_handler.readline().strip(),
-                                 self.file_handler.readline().strip(),
-                                 self.file_handler.readline().strip())
+        return next(self._next_read_iter)
+
     # The first listed Read is a module. The second listed read is an objectClass type Read. This code takes each of
     # the four variables (header_line, sequence_line, separator_line, quality_line) and inserts them into one single
     # variable.
-
-    def close(self):
-        """Closes the file stream.
-
-        Args:
-            self
-
-        Returns:
-            None
-        """
-        self.file_handler.close()
 
 
 class BarcodesParser:
@@ -150,35 +134,36 @@ class BarcodesParser:
                 # strip and split the line into the tab-separated fields
                 fields = line.strip().split('\t')
                 # Append the current barcode to the list of barcodes
-                barcodes.append(fields[0])
+                barcodes.append(fields[0].encode('ascii'))
                 # Append the current sample_id to the list of sample_ids
                 sample_ids.append(fields[1])
                 # Note that the sample_ids and barcodes are stored in the same order, therefore the first brcode
                 # corresponds to the first sample_id, and so on
-            # After all the lines of the file are read, do the sanity checks, and then store the mapping in a dictionary
-            # Return an error if there are duplicate sample_ids (who puts two barcodes for the same sample?)
-            if len(set([x for x in sample_ids if sample_ids.count(x) > 1])):
-                print(
-                    'Error: The same sample identifier appears twice in the barcode file. Please check again or seek '
-                    'advice about this script!\n')
-                sys.exit(5)
-            # Return an error if there are duplicate barcodes (who puts two samples with the same barcode?)
-            if len(set([x for x in barcodes if barcodes.count(x) > 1])):
-                print(
-                    'Error: The same sample barcode appears twice in the barcode file. Please check again or seek '
-                    'advice about this script!\n')
-                sys.exit(6)
-            # When all the checks are done, store all the barcode->sample pairs in a dictionary for deconvolution
-            for index in range(len(barcodes)):
-                self.expected[barcodes[index]] = sample_ids[index]
-                # Do not return anything, the mapping is stored in the self.expected attribute of the BarcodesParser
-                # object
+        # After all the lines of the file are read, do the sanity checks, and then store the mapping in a dictionary
+        # Return an error if there are duplicate sample_ids (who puts two barcodes for the same sample?)
+        if len(set([x for x in sample_ids if sample_ids.count(x) > 1])):
+            print(
+                'Error: The same sample identifier appears twice in the barcode file. Please check again or seek '
+                'advice about this script!\n')
+            sys.exit(5)
+        # Return an error if there are duplicate barcodes (who puts two samples with the same barcode?)
+        if len(set([x for x in barcodes if barcodes.count(x) > 1])):
+            print(
+                'Error: The same sample barcode appears twice in the barcode file. Please check again or seek '
+                'advice about this script!\n')
+            sys.exit(6)
+        # When all the checks are done, store all the barcode->sample pairs in a dictionary for deconvolution
+        for index in range(len(barcodes)):
+            self.expected[barcodes[index]] = sample_ids[index]
+            # Do not return anything, the mapping is stored in the self.expected attribute of the BarcodesParser
+            # object
+        # For training purpose, print the dictionary of expected barcodes
+        #print("Test: expected_barcodes:", self.expected)
         # From the first barcode in the variable, define the expected barcode length, assuming all barcodes are the same
         # length
         self.barcode_length = len(list(self.expected.keys())[0])
         # Assuming the barcode is in the header after # symbol, compile once and for all a motif/pattern
-        self.barcode_pattern = re.compile("#([ATGCN]{%i})[ATGCN]*/" % self.barcode_length)
-        #print("Test: barcode_pattern: #([ATGCN]{%i})[ATGCN]*/" % self.barcode_length)
+        self.barcode_pattern = re.compile(("#([ATGCN]{%i})[ATGCN]*/" % self.barcode_length).encode('ascii'))
 
     
     def assign_read_to_sample(self, read_pair, barcode_length):

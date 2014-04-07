@@ -277,14 +277,9 @@ def main():
         # Converts the user-defined Phred threshold to a Ascii-compatible value appropriate for the later
         # percentile-based test
         if 1 <= args.illumina_version < 1.8:
-            # Hard-coded to only support Phred scores 0 to 41, encoded by ASCII 64 to 105
-            illumina_ascii_alphabet = [chr(c) for c in range(64, 106)]
-            # Useful to avoid computing it many times when checking quality
-            length_alphabet = len(illumina_ascii_alphabet)
+            ascii_phred_threshold = args.phred + 64
         elif args.illumina_version >= 1.8:
-            # Hard-coded to only support Phred scores 0 to 41, encoded by ASCII 64 to 105
-            illumina_ascii_alphabet = [chr(c) for c in range(33, 94)]
-            length_alphabet = len(illumina_ascii_alphabet)
+            ascii_phred_threshold = args.phred + 33
         else:
             print(
                 "Error: The Illumina version: %.1f is not supported; please check again your illumina version for "
@@ -293,11 +288,6 @@ def main():
         # Calculate the maximal number of poor quality bases allowed based on the length of the first read and the
         # percentage of bases allowed below the threshold
         quality_max_bases = math.floor(args.percent_max * len(read_pair.forward_read.sequence_line) / 100)
-        # Prepares a dictionary re-initialised each time a read is checked for quality
-        # Keys: expected ASCII symbols based on Illumina version
-        # Values: initialised at zero
-        ascii_counts = dict.fromkeys(illumina_ascii_alphabet, 0)
-        #print("Test: ascii_counts: ", ascii_counts)
         #print("Test: quality_max_bases: %i" % quality_max_bases)
     # if the user did not provide a phred threshold
     else:
@@ -323,7 +313,7 @@ def main():
     # Also we only check the first read to save more time (a single test per mate pair)
     while read_pair.forward_read.header_line:
         # For training purpose print the current read mates
-        #print("Test: forward_read: %s\n" % forward_read)
+        #print("Test: forward_read: %s\n" % read_pair.forward_read)
         #print("Test: reverse_read: %s\n" % reverse_read)
         # run the while function on both the forward and reverse read simultaneously
 
@@ -399,9 +389,7 @@ def main():
             #print("Test: ascii_counts before forward: ", ascii_counts)
             # define_quality_status function uses percentile to check the quality much faster than a per-base
             #  counter)
-            read_pair.forward_read.define_quality_status(args.phred, quality_max_bases, illumina_ascii_alphabet,
-                                                         length_alphabet, copy.copy(ascii_counts))
-            #print("Test: ascii_counts after forward: ", ascii_counts)
+            read_pair.forward_read.define_quality_status(ascii_phred_threshold, quality_max_bases)
             # if the forward read is poor quality
             if not read_pair.forward_read.quality_status:
                 # log it
@@ -414,9 +402,7 @@ def main():
                 continue
             #print("Test: ascii_counts before reverse: ", ascii_counts)
             # if we reach here the quality of the forward mate was acceptable, check the reverse mate
-            read_pair.reverse_read.define_quality_status(args.phred, quality_max_bases, illumina_ascii_alphabet,
-                                                         length_alphabet, copy.copy(ascii_counts))
-            #print("Test: ascii_counts after reverse: ", ascii_counts)
+            read_pair.reverse_read.define_quality_status(ascii_phred_threshold, quality_max_bases)
             # if the forward read is poor quality
             if not read_pair.reverse_read.quality_status:
                 # log it
@@ -447,9 +433,6 @@ def main():
     #print("Test: read_logger.quality_excluded:", read_logger.quality_excluded)
     #print("Test: read_logger.adapter_excluded:", read_logger.adapter_excluded)
     print('Info: Total reads processed: {0:,}'.format(sum(read_logger.assigned.values()) + read_logger.unassigned))
-
-    # Close the file stream of the raw read files
-    read_pair_parser.close()
 
     # Write the deconvolution statistics in the report file
     read_logger.write_stats()
