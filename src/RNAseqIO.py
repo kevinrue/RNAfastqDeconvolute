@@ -16,8 +16,6 @@ import re
 import os.path
 # Module sys allows to interrupt the script and return an error code
 import sys
-# itertools.repeat yields a given value a given number of times, or indefinitely
-from itertools import repeat
 # Custom module to store the data of a read
 import SeqDataTypes
 # Custom Module which contains a few functions for approximate matching
