@@ -42,9 +42,89 @@ class FastqgzPairParser:
         # Fill in the tuple structure with the adapter objects and return it
         return SeqDataTypes.ReadPair(self.forward_parser.next_read(), self.reverse_parser.next_read())
 
+    def close(self):
+        self.forward_parser.close()
+        self.reverse_parser.close()
+
+
+def next_read_iter(file_handle, read_size):
+    """yield Read objects created from lines read from a binary file handle
+
+    For every four lines read from the file, a SeqDataTypes.Read object with
+    those four lines is yielded.
+
+    Whitespace at the end of each line is removed.
+    """
+    # the current buffer of lines read from the file
+    lines = []
+    # the length of the buffer of lines
+    # keeping this is just an optimization: avoid repeatedly calling len(lines)
+    n_lines = 0
+    # the index in the buffer from which to continue reading the next lines
+    next_line_index = 0
+    # extra bytes from the end of the data last read from the file, which were
+    # not part of a complete line
+    extra_bytes = b''
+
+    while True:
+        # read some data from the file and split it into lines, keeping the
+        # line endings ('\n' characters)
+        new_lines = file_handle.read(read_size).splitlines(True)
+        if not new_lines:
+            # this happens when file_handle.read(READ_SIZE) returns an
+            # empty bytes object, which means we've read the entire file
+            file_handle.close()
+
+            # check if the file ended with a line which wasn't
+            # terminated with a newline character ('\n')
+            if extra_bytes:
+                # if there are exactly three previous lines in the buffer,
+                # then yield one last Read object
+                if next_line_index == n_lines - 3:
+                    yield SeqDataTypes.Read(lines[next_line_index],
+                                            lines[next_line_index + 1],
+                                            lines[next_line_index + 2],
+                                            extra_bytes)
+            break
+
+        # add the incomplete last line from the previous read to the first line
+        # from this read
+        new_lines[0] = extra_bytes + new_lines[0]
+
+        # if the last line from this read isn't complete (i.e. doesn't end with
+        # '\n') then keep it seperately until the next read
+        if new_lines[-1][-1] != 10: # b'\n'[0] == 10
+            extra_bytes = new_lines.pop()
+        else:
+            extra_bytes = b''
+
+        # add the new lines from this read to the buffer of lines, while
+        # discarding already used lines from the buffer
+        lines = lines[next_line_index:] + \
+                [line.rstrip() for line in new_lines]
+        n_lines = len(lines)
+        next_line_index = 0
+
+        # as long as there are enough lines in the buffer, yield Read objects
+        # from groups of four lines
+        while next_line_index <= n_lines - 4:
+            yield SeqDataTypes.Read(lines[next_line_index],
+                                    lines[next_line_index + 1],
+                                    lines[next_line_index + 2],
+                                    lines[next_line_index + 3])
+            next_line_index += 4
+
+    # after the entire file has been read and there are no more groups of four
+    # lines from which Read objects can be created, yield Read objects with
+    # empty lines indefinitely
+    while True:
+        yield SeqDataTypes.Read(b'', b'', b'', b'')
+
+
 
 class FastqgzParser:
     """Parses compressed fastq files."""
+    READ_SIZE = 2 ** 20 # in bytes; this means read 1MB at a time
 
     def __init__(self, filename, expected_barcode_pattern):
         """Constructor for FastqqzParser
@@ -52,9 +132,14 @@ class FastqgzParser:
         """
         self.filename = filename
         self.barcode_pattern = expected_barcode_pattern
-        self.open()
 
-    def open(self):
+        # internal variables
+        self._file_handle = None
+
+        # open the file for reading
+        self._open()
+
+    def _open(self):
         """Opens the file stream.
 
         Args:
@@ -63,19 +148,14 @@ class FastqgzParser:
         Returns:
             None
         """
-        lines = [
-            line.strip() for line in
-            gzip.open(self.filename, "rb").read().splitlines()
-        ]
-        def next_read_iter(lines=lines):
-            for index in range(0, len(lines), 4):
-                yield SeqDataTypes.Read(lines[index], lines[index + 1], lines[index + 2], lines[index + 3])
-            while True:
-                yield SeqDataTypes.Read(b'', b'', b'', b'')
-        self._next_read_iter = next_read_iter()
+        # open the gzip file in binary reading mode
+        self._file_handle = gzip.open(self.filename, "rb")
+
+        # create an iterator which generates Read objects from the file's data
+        self._next_read_iter = next_read_iter(self._file_handle, self.READ_SIZE)
 
     def next_read(self):
-        """Parses and return the next sequenced read in the file.
+        """Returns the next sequenced read in the file.
 
         Args:
             self
@@ -83,9 +163,17 @@ class FastqgzParser:
         Returns:
             The next sequenced read in the file.
         """
-        # Will crash if the expected barcodes are longer than the sequence between # and /
-        # Return a Read object
-        return next(self._next_read_iter)
+        try:
+            return next(self._next_read_iter)
+        except StopIteration:
+            return SeqDataTypes.Read(b'', b'', b'', b'')
+
+    def close(self):
+        """close the file handle"""
+        if self._file_handle is not None:
+            self._file_handle.close()
+            self._file_handle = None
+            self._next_read_iter = iter([])
 
     # The first listed Read is a module. The second listed read is an objectClass type Read. This code takes each of
     # the four variables (header_line, sequence_line, separator_line, quality_line) and inserts them into one single

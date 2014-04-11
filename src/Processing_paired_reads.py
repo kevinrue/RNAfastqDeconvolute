@@ -434,6 +434,9 @@ def main():
     #print("Test: read_logger.adapter_excluded:", read_logger.adapter_excluded)
     print('Info: Total reads processed: {0:,}'.format(sum(read_logger.assigned.values()) + read_logger.unassigned))
 
+    # Close the file stream of the raw read files
+    read_pair_parser.close()
+
     # Write the deconvolution statistics in the report file
     read_logger.write_stats()
     # Close (=save) the output read files
