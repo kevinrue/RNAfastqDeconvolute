@@ -6,8 +6,9 @@ __copyright__ = "Copyright 2014, GPLv2"
 
 # Module collections allows a function to return multiple variable in a named tuple. Very clean.
 import collections
-# Module fuzzysearch allows approximate matching of a substring within another string
-import fuzzysearch
+# Module jellyfish allows approximate matching of a substring within another string
+# In particular, this module encodes the Hamming distance in C
+import jellyfish
 # Module gzip allows to parse compressed files without having to first decompress them.
 import gzip
 # Module re allows to match regular expressions. Useful to see if a filename comes from BIG, MSU, or Conway.
@@ -18,9 +19,6 @@ import os.path
 import sys
 # Custom module to store the data of a read
 import SeqDataTypes
-# Custom Module which contains a few functions for approximate matching
-import ApproxMatch
-
 
 class FastqgzPairParser:
     """Synchronises the parsing of a forward and a reverse compressed fastq files."""
@@ -307,7 +305,7 @@ class BarcodesParser:
         # For each expected barcode
         for expected in list(self.expected.keys()):
             # check if the sequenced barcode is an approximate match to each of them (1 substitution allowed)
-            if ApproxMatch.approx_substitute(sequenced_barcode, expected, 1):
+            if jellyfish.hamming_distance(sequenced_barcode.decode(), expected.decode()) < 2:
             # The alternative below takes a few more seconds because it initialises additional variable useful for 
             # browsing long sequences to find a smaller sequence. In this case, a direct comparison of an expected
             # barcode and a sequenced barcode of the same length is faster.
